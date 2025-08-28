@@ -260,28 +260,35 @@ export const SelectionPage: React.FC = () => {
         console.log('❌ Offline and no cached pontos available for area:', areaId);
       }
       
-      // Load medições for today to mark completed points
+      // Load medições for today to mark completed points (only if we have pontos)
       if (data.length > 0) {
         await loadMedicoesDeHoje(data.map(p => p.id));
+      } else {
+        // Clear any previous medições state if no pontos available
+        setPontosComMedicoes(new Set());
       }
     } catch (error) {
       console.error('Error loading pontos:', error);
+      // If error occurred but we have cached data, use it
+      if (data.length === 0) {
+        setPontosComMedicoes(new Set());
+      }
     } finally {
       setLoading(prev => ({ ...prev, pontos: false }));
     }
   };
 
   const loadMedicoesDeHoje = async (pontoIds: string[]) => {
+    // Skip loading medições if offline to avoid errors
+    if (!isOnline) {
+      console.log('ℹ️ Offline: Skipping medições check');
+      setPontosComMedicoes(new Set());
+      return;
+    }
+    
     setLoading(prev => ({ ...prev, medicoes: true }));
     
     try {
-      // Se offline, não tenta carregar medições
-      if (!isOnline) {
-        console.log('ℹ️ Offline: Skipping medições check');
-        setPontosComMedicoes(new Set());
-        return;
-      }
-
       console.log('🔍 Loading medições for today...');
       
       const hoje = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
