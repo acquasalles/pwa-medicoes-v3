@@ -22,7 +22,90 @@ export const SelectionPage: React.FC = () => {
     areas: false,
     pontos: false,
     medicoes: false,
+    preload: false,
   });
+
+  // Preload all data when user is online for the first time
+  const preloadAllData = async () => {
+    if (!isOnline) return;
+
+    const PRELOAD_FLAG = 'data_preloaded';
+    const lastPreload = localStorage.getItem(PRELOAD_FLAG);
+    const oneHour = 60 * 60 * 1000;
+    
+    // Only preload if haven't done it recently (within 1 hour)
+    if (lastPreload && (Date.now() - Number(lastPreload)) < oneHour) {
+      console.log('🔄 Data already preloaded recently, skipping...');
+      return;
+    }
+
+    setLoading(prev => ({ ...prev, preload: true }));
+    console.log('🚀 Starting full data preload...');
+    
+    try {
+      // 1. Load and cache all clientes
+      const { data: clientesData, error: clientesError } = await supabase
+        .from('clientes')
+        .select('*')
+        .order('razao_social');
+
+      if (clientesError) throw clientesError;
+      
+      if (clientesData) {
+        localStorage.setItem('cached_clientes', JSON.stringify(clientesData));
+        console.log('✅ Preloaded', clientesData.length, 'clientes');
+
+        // 2. For each cliente, load and cache all areas
+        for (const cliente of clientesData) {
+          const { data: areasData, error: areasError } = await supabase
+            .from('area_de_trabalho')
+            .select('*')
+            .eq('cliente_id', cliente.id)
+            .order('nome_area');
+
+          if (areasError) {
+            console.error('❌ Error preloading areas for cliente', cliente.id, ':', areasError);
+            continue;
+          }
+
+          if (areasData) {
+            const AREAS_CACHE_KEY = `cached_areas_${cliente.id}`;
+            localStorage.setItem(AREAS_CACHE_KEY, JSON.stringify(areasData));
+            console.log('✅ Preloaded', areasData.length, 'areas for cliente', cliente.id);
+
+            // 3. For each area, load and cache all pontos
+            for (const area of areasData) {
+              const { data: pontosData, error: pontosError } = await supabase
+                .from('ponto_de_coleta')
+                .select('*')
+                .eq('area_de_trabalho_id', area.id)
+                .order('nome');
+
+              if (pontosError) {
+                console.error('❌ Error preloading pontos for area', area.id, ':', pontosError);
+                continue;
+              }
+
+              if (pontosData) {
+                const PONTOS_CACHE_KEY = `cached_pontos_${area.id}`;
+                localStorage.setItem(PONTOS_CACHE_KEY, JSON.stringify(pontosData));
+                console.log('✅ Preloaded', pontosData.length, 'pontos for area', area.id);
+              }
+            }
+          }
+        }
+      }
+
+      // Mark preload as completed
+      localStorage.setItem(PRELOAD_FLAG, Date.now().toString());
+      console.log('🎉 Full data preload completed successfully!');
+      
+    } catch (error) {
+      console.error('❌ Error during data preload:', error);
+    } finally {
+      setLoading(prev => ({ ...prev, preload: false }));
+    }
+  };
 
   // Save selection state to localStorage
   const saveSelectionState = () => {
@@ -53,6 +136,12 @@ export const SelectionPage: React.FC = () => {
   useEffect(() => {
     const initializePage = async () => {
       const savedState = loadSelectionState();
+      
+      // Start preload in background if online
+      if (isOnline) {
+        preloadAllData();
+      }
+      
       await loadClientes();
       
       // Restore previous selections if available
@@ -65,7 +154,7 @@ export const SelectionPage: React.FC = () => {
     };
     
     initializePage();
-  }, []);
+  }, [isOnline]);
 
   // Load areas and set previous area selection
   useEffect(() => {
@@ -345,6 +434,13 @@ export const SelectionPage: React.FC = () => {
             <p className="text-sm text-orange-600 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 inline-flex items-center">
               📱 Modo Offline - Usando dados em cache
             </p>
+          )}
+          
+          {loading.preload && (
+            <div className="text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 inline-flex items-center mt-2">
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              Carregando dados para uso offline...
+            </div>
           )}
          
         </div>
