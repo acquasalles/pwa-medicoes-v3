@@ -32,10 +32,15 @@ export const useInstallPrompt = () => {
     };
 
     // Check if app is already installed
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    const isInWebAppiOS = (window.navigator as any).standalone === true;
+    const checkInstallStatus = () => {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isInWebAppiOS = (window.navigator as any).standalone === true;
+      const isInWebAppChrome = window.matchMedia('(display-mode: minimal-ui)').matches;
+      
+      return isStandalone || isInWebAppiOS || isInWebAppChrome;
+    };
     
-    if (isStandalone || isInWebAppiOS) {
+    if (checkInstallStatus()) {
       console.log('✅ PWA: Already running as installed app');
       setIsInstalled(true);
     } else {
@@ -46,10 +51,12 @@ export const useInstallPrompt = () => {
     window.addEventListener('appinstalled', handleAppInstalled);
     
     // Debug: Log current state
-    console.log('📊 PWA Status:', {
-      standalone: isStandalone,
-      iOS: isInWebAppiOS,
-      userAgent: navigator.userAgent.slice(0, 50)
+    console.log('📊 PWA Install Status:', {
+      standalone: window.matchMedia('(display-mode: standalone)').matches,
+      minimal: window.matchMedia('(display-mode: minimal-ui)').matches,
+      iOS: (window.navigator as any).standalone === true,
+      userAgent: navigator.userAgent.slice(0, 80),
+      installed: checkInstallStatus()
     });
 
     return () => {
@@ -69,8 +76,11 @@ export const useInstallPrompt = () => {
       console.log('📝 PWA: Install prompt result:', outcome);
       
       if (outcome === 'accepted') {
+        console.log('✅ PWA: User accepted installation');
         setIsInstallable(false);
         setInstallPrompt(null);
+      } else {
+        console.log('❌ PWA: User dismissed installation');
       }
     } catch (error) {
       console.error('❌ PWA: Install error:', error);

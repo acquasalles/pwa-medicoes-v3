@@ -11,18 +11,36 @@ export const InstallPrompt: React.FC = () => {
   React.useEffect(() => {
     const checkIfPWA = () => {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isMinimalUI = window.matchMedia('(display-mode: minimal-ui)').matches;
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const isAndroid = /Android/.test(navigator.userAgent);
+      const isPWA = (window.navigator as any).standalone === true;
       
-      if (!isStandalone && (isIOS || isAndroid) && !dismissed) {
+      // Only show manual instructions if not in PWA mode and on mobile
+      if (!isStandalone && !isMinimalUI && !isPWA && (isIOS || isAndroid) && !dismissed) {
         setShowManualInstructions(true);
+      } else {
+        setShowManualInstructions(false);
       }
     };
     
     checkIfPWA();
+    
+    // Listen for display mode changes
+    const mediaQuery = window.matchMedia('(display-mode: standalone)');
+    mediaQuery.addListener(checkIfPWA);
+    
+    return () => {
+      mediaQuery.removeListener(checkIfPWA);
+    };
   }, [dismissed]);
 
-  if (dismissed) return null;
+  // Don't show anything if dismissed or if running as PWA
+  const isRunningAsPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                        window.matchMedia('(display-mode: minimal-ui)').matches ||
+                        (window.navigator as any).standalone === true;
+                        
+  if (dismissed || isRunningAsPWA) return null;
   
   // If we have the install prompt, show the automatic version
   if (isInstallable) {
