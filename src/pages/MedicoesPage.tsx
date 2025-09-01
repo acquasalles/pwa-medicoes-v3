@@ -530,6 +530,12 @@ export const MedicoesPage: React.FC = () => {
     }
   };
 
+  const handleBack = () => {
+    // Don't clear the selection state when going back
+    // This allows SelectionPage to restore the previous selections
+    navigate('/selecao');
+  };
+
   // Show offline message if no context data available
   if (!loading && (!contextData.cliente || !contextData.area || !contextData.ponto)) {
     return (
@@ -613,9 +619,7 @@ export const MedicoesPage: React.FC = () => {
         </div>
       </Layout>
     );
-  }</action>
-    }
-  };
+  }
 
   const onSubmit = async (data: MedicaoFormData) => {
     setSaving(true);
@@ -719,12 +723,6 @@ export const MedicoesPage: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleBack = () => {
-    // Don't clear the selection state when going back
-    // This allows SelectionPage to restore the previous selections
-    navigate('/selecao');
   };
 
   const getComplianceStatus = (tipoId: string, valor: number) => {
