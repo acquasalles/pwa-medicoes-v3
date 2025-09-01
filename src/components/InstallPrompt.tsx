@@ -12,15 +12,18 @@ export const InstallPrompt: React.FC = () => {
     dismissPrompt,
   } = useInstallPrompt();
 
+  console.log('🎨 InstallPrompt render:', { shouldShowPrompt, isInstallable, showManualInstructions, isFirstVisit });
   if (!shouldShowPrompt) {
+    console.log('❌ InstallPrompt: Not rendering - shouldShowPrompt is false');
     return null;
   }
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isAndroid = /Android/.test(navigator.userAgent);
 
+  console.log('✅ InstallPrompt: Rendering prompt', { isIOS, isAndroid, isInstallable, showManualInstructions });
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50 install-prompt">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50 install-prompt animate-slide-up">
       <div className="bg-white rounded-t-3xl p-6 w-full max-w-md mx-auto animate-slide-up shadow-2xl">
         <button
           onClick={dismissPrompt}
