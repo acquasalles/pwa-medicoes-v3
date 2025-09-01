@@ -96,24 +96,6 @@ export const SelectionPage: React.FC = () => {
         }
       }
 
-      // 4. Load and cache tipos de medicao (global)
-      console.log('🔍 Preloading tipos medicao...');
-      try {
-        const { data: tiposData, error: tiposError } = await supabase
-          .from('tipos_medicao')
-          .select('*')
-          .order('nome');
-
-        if (tiposError) {
-          console.error('❌ Error preloading tipos medicao:', tiposError);
-        } else if (tiposData) {
-          localStorage.setItem('cached_tipos_medicao', JSON.stringify(tiposData));
-          console.log('✅ Preloaded', tiposData.length, 'tipos medicao');
-        }
-      } catch (error) {
-        console.error('❌ Error preloading tipos medicao:', error);
-      }
-
       // Mark preload as completed
       localStorage.setItem(PRELOAD_FLAG, Date.now().toString());
       console.log('🎉 Full data preload completed successfully!');
