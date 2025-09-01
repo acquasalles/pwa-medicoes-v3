@@ -109,12 +109,19 @@ export const InstallPrompt: React.FC = () => {
           <X className="w-4 h-4" />
         </button>
       </div>
-            </p>
-            <p className="text-sm text-gray-600 mt-1">
-              Instale o Sistema de Medições para acesso rápido e funcionalidade offline
-            </p>
-          </div>
-          <button
+
+      <div className="mb-6">
+        <div>
+          <p className="text-sm font-medium text-gray-900 mb-3">
+            📱 Para instalar no iOS:
+          </p>
+          <p className="text-sm text-gray-600 mt-1">
+            Instale o Sistema de Medições para acesso rápido e funcionalidade offline
+          </p>
+        </div>
+        
+        {isIOS && (
+          <div className="space-y-3">
             <div className="space-y-2 text-sm text-gray-700 bg-gray-50 rounded-lg p-3">
               <p>1. Toque no ícone <strong>Compartilhar</strong> (□↑) no Safari</p>
               <p>2. Role para baixo e toque em <strong>"Adicionar à Tela de Início"</strong></p>
@@ -126,13 +133,13 @@ export const InstallPrompt: React.FC = () => {
           <div className="space-y-3">
             <p className="text-sm font-medium text-gray-900 mb-3">
               📱 Para instalar no Android:
-          >
+            </p>
             <div className="space-y-2 text-sm text-gray-700 bg-gray-50 rounded-lg p-3">
               <p>1. Toque no menu do navegador (⋮)</p>
               <p>2. Selecione <strong>"Adicionar à tela inicial"</strong></p>
               <p>3. Confirme tocando em <strong>"Adicionar"</strong></p>
             </div>
-            <X className="w-4 h-4" />
+          </div>
         )}
         {!isIOS && !isAndroid && (
           <div className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3">
@@ -140,7 +147,7 @@ export const InstallPrompt: React.FC = () => {
           </div>
         )}
       </div>
-      <div className="mb-6">
+      
       {/* Benefits */}
       <div className="space-y-2 mb-6">
         <div className="flex items-center space-x-2 text-xs text-gray-600">
@@ -152,7 +159,7 @@ export const InstallPrompt: React.FC = () => {
           <span>Funciona offline</span>
         </div>
       </div>
-        {isIOS && (
+
       {/* Action Button */}
       <button
         onClick={dismissPrompt}
@@ -166,6 +173,6 @@ export const InstallPrompt: React.FC = () => {
           ✨ Primeira visita? Instale para a melhor experiência!
         </p>
       )}
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-gray-900 mb-3">
+    </div>
+  );
 };
