@@ -4,7 +4,8 @@
   "description": "PWA para cadastro de medições com funcionalidade offline",
   "theme_color": "#203B8C",
   "background_color": "#B6F2EC",
-  "display": "standalone",
+  "display": "standalone", 
+  "display_override": ["window-controls-overlay", "minimal-ui"],
   "orientation": "portrait",
   "scope": "/",
   "start_url": "/",
@@ -37,6 +38,7 @@
     }
   ],
   "categories": ["productivity", "utilities"],
+  "prefer_related_applications": false,
   "shortcuts": [
     {
       "name": "Nova Medição",

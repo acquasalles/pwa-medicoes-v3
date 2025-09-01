@@ -1,8 +1,6 @@
 const CACHE_NAME = 'medicoes-pwa-v2';
 const urlsToCache = [
   '/',
-  '/manifest.json',
-  '/vite.svg',
   '/logo.png',
   '/svg-icon-any.svg'
 ];
