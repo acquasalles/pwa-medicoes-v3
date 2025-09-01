@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
 import { supabase, Cliente, AreaDeTrabalho, PontoDeColeta } from '../lib/supabase';
+import { useOfflineSync } from '../hooks/useOfflineSync';
 import { Loader2, ChevronDown, Building2, MapPin, Target, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const SelectionPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isOnline } = useOfflineSync();
   
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [areas, setAreas] = useState<AreaDeTrabalho[]>([]);
@@ -20,7 +22,118 @@ export const SelectionPage: React.FC = () => {
     areas: false,
     pontos: false,
     medicoes: false,
+    preload: false,
   });
+
+  // Preload all data when user is online for the first time
+  const preloadAllData = async () => {
+    if (!isOnline) return;
+
+    const PRELOAD_FLAG = 'data_preloaded';
+    const lastPreload = localStorage.getItem(PRELOAD_FLAG);
+    const oneHour = 60 * 60 * 1000;
+    
+    // Only preload if haven't done it recently (within 1 hour)
+    if (lastPreload && (Date.now() - Number(lastPreload)) < oneHour) {
+      console.log('🔄 Data already preloaded recently, skipping...');
+      return;
+    }
+
+    console.log('🚀 Starting optimized data preload...');
+    
+    try {
+      // 1. Load and cache all clientes (but don't block UI)
+      await new Promise(resolve => setTimeout(resolve, 100)); // Allow UI to render
+      
+      const { data: clientesData, error: clientesError } = await supabase
+        .from('clientes')
+        .select('*')
+        .order('razao_social');
+
+      if (clientesError) throw clientesError;
+      
+      if (clientesData) {
+        localStorage.setItem('cached_clientes', JSON.stringify(clientesData));
+        console.log('✅ Preloaded', clientesData.length, 'clientes - processing areas...');
+
+        // 2. Process areas in smaller batches to avoid blocking UI
+        const batchSize = 10;
+        for (let i = 0; i < clientesData.length; i += batchSize) {
+          const clienteBatch = clientesData.slice(i, i + batchSize);
+          
+          // Allow UI to stay responsive
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
+          await Promise.all(clienteBatch.map(async (cliente) => {
+            try {
+              const { data: areasData, error: areasError } = await supabase
+                .from('area_de_trabalho')
+                .select('*')
+                .eq('cliente_id', cliente.id)
+                .order('nome_area');
+
+              if (areasError) {
+                console.error('❌ Error preloading areas for cliente', cliente.id, ':', areasError);
+                return;
+              }
+
+              if (areasData) {
+                const AREAS_CACHE_KEY = `cached_areas_${cliente.id}`;
+                localStorage.setItem(AREAS_CACHE_KEY, JSON.stringify(areasData));
+                
+                // Process pontos for each area
+                await Promise.all(areasData.map(async (area) => {
+                  try {
+                    const { data: pontosData, error: pontosError } = await supabase
+                      .from('ponto_de_coleta')
+                      .select('*')
+                      .eq('area_de_trabalho_id', area.id)
+                      .order('nome');
+
+                    if (!pontosError && pontosData) {
+                      const PONTOS_CACHE_KEY = `cached_pontos_${area.id}`;
+                      localStorage.setItem(PONTOS_CACHE_KEY, JSON.stringify(pontosData));
+                    }
+                  } catch (error) {
+                    console.error('❌ Error preloading pontos for area', area.id, ':', error);
+                  }
+                }));
+              }
+            } catch (error) {
+              console.error('❌ Error preloading data for cliente', cliente.id, ':', error);
+            }
+          }));
+          
+          // Log progress
+          console.log(`📈 Processed batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(clientesData.length/batchSize)}`);
+        }
+      }
+
+      // Load tipos medicao separately (lighter operation)
+      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('🔍 Preloading tipos medicao...');
+      try {
+          const { data: areasData, error: areasError } = await supabase
+          .from('tipos_medicao')
+          .select('*')
+          .order('nome');
+
+        if (!areasError && areasData) {
+          localStorage.setItem('cached_tipos_medicao', JSON.stringify(areasData));
+          console.log('✅ Preloaded', areasData.length, 'tipos medicao');
+        }
+      } catch (error) {
+        console.error('❌ Error preloading tipos medicao:', error);
+      }
+
+      // Mark preload as completed
+      localStorage.setItem(PRELOAD_FLAG, Date.now().toString());
+      console.log('🎉 Optimized data preload completed successfully!');
+      
+    } catch (error) {
+      console.error('❌ Error during data preload:', error);
+    }
+  };
 
   // Save selection state to localStorage
   const saveSelectionState = () => {
@@ -51,7 +164,17 @@ export const SelectionPage: React.FC = () => {
   useEffect(() => {
     const initializePage = async () => {
       const savedState = loadSelectionState();
+      
+      // Load clientes first (immediate need)
       await loadClientes();
+      
+      // Start preload in background if online (non-blocking)
+      if (isOnline) {
+        // Run preload in background without blocking UI
+        setTimeout(() => {
+          preloadAllData().catch(console.error);
+        }, 1000); // Delay to allow UI to render first
+      }
       
       // Restore previous selections if available
       if (savedState) {
@@ -63,7 +186,7 @@ export const SelectionPage: React.FC = () => {
     };
     
     initializePage();
-  }, []);
+  }, [isOnline]);
 
   // Load areas and set previous area selection
   useEffect(() => {
@@ -97,34 +220,59 @@ export const SelectionPage: React.FC = () => {
 
   const loadClientes = async () => {
     setLoading(prev => ({ ...prev, clientes: true }));
+    const CACHE_KEY = 'cached_clientes';
+    let data: Cliente[] = [];
     
     try {
-      console.log('🔍 Loading clientes...');
+      // 1. Tentar carregar do cache local primeiro
+      try {
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        if (cachedData) {
+          data = JSON.parse(cachedData);
+          setClientes(data);
+          console.log('🔍 Clientes loaded from cache:', data.length, 'items');
+        }
+      } catch (cacheError) {
+        console.error('❌ Error reading clientes cache:', cacheError);
+      }
 
+      // 2. Se online, buscar dados atualizados do Supabase
+      if (isOnline) {
+        console.log('🔍 Loading clientes from Supabase...');
+        
+        const { data: supabaseData, error } = await supabase
+          .from('clientes')
+          .select('*')
+          .order('razao_social');
 
-      const { data, error } = await supabase
-        .from('clientes')
-        .select('*')
-        .order('razao_social');
-
-      if (error) throw error;
+        if (error) throw error;
+        
+        if (supabaseData) {
+          console.log('📊 Clientes loaded from Supabase:', supabaseData.length, 'items');
+          data = supabaseData;
+          setClientes(data);
+          
+          // Atualizar cache
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+            console.log('✅ Clientes cached successfully');
+          } catch (cacheError) {
+            console.error('❌ Error caching clientes:', cacheError);
+          }
+        }
+      } else if (data.length === 0) {
+        console.log('❌ Offline and no cached clientes available');
+      }
       
-      console.log('📊 Total clientes found:', data?.length || 0);
-      
-      // RLS will automatically filter clients based on user permissions
-      const authorizedClientes = data || [];
-      
-      console.log('📋 Final clientes for user:', authorizedClientes.map(c => ({
+      console.log('📋 Final clientes for user:', data.map(c => ({
         id: c.id,
         razao_social: c.razao_social || c.id_name
       })));
       
-      setClientes(authorizedClientes);
-      
       // Auto-select if only one client
-      if (authorizedClientes.length === 1) {
-        console.log('🎯 Auto-selecting single client:', authorizedClientes[0].id);
-        setSelectedCliente(authorizedClientes[0].id);
+      if (data.length === 1) {
+        console.log('🎯 Auto-selecting single client:', data[0].id);
+        setSelectedCliente(data[0].id);
       }
     } catch (error) {
       console.error('Error loading clientes:', error);
@@ -135,16 +283,50 @@ export const SelectionPage: React.FC = () => {
 
   const loadAreas = async (clienteId: number) => {
     setLoading(prev => ({ ...prev, areas: true }));
+    const CACHE_KEY = `cached_areas_${clienteId}`;
+    let data: AreaDeTrabalho[] = [];
     
     try {
-      const { data, error } = await supabase
-        .from('area_de_trabalho')
-        .select('*')
-        .eq('cliente_id', clienteId)
-        .order('nome_area');
+      // 1. Tentar carregar do cache local primeiro
+      try {
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        if (cachedData) {
+          data = JSON.parse(cachedData);
+          setAreas(data);
+          console.log('🔍 Areas loaded from cache for client', clienteId, ':', data.length, 'items');
+        }
+      } catch (cacheError) {
+        console.error('❌ Error reading areas cache:', cacheError);
+      }
 
-      if (error) throw error;
-      setAreas(data || []);
+      // 2. Se online, buscar dados atualizados do Supabase
+      if (isOnline) {
+        console.log('🔍 Loading areas from Supabase for client:', clienteId);
+        
+        const { data: supabaseData, error } = await supabase
+          .from('area_de_trabalho')
+          .select('*')
+          .eq('cliente_id', clienteId)
+          .order('nome_area');
+
+        if (error) throw error;
+        
+        if (supabaseData) {
+          console.log('📊 Areas loaded from Supabase:', supabaseData.length, 'items');
+          data = supabaseData;
+          setAreas(data);
+          
+          // Atualizar cache
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+            console.log('✅ Areas cached successfully');
+          } catch (cacheError) {
+            console.error('❌ Error caching areas:', cacheError);
+          }
+        }
+      } else if (data.length === 0) {
+        console.log('❌ Offline and no cached areas available for client:', clienteId);
+      }
     } catch (error) {
       console.error('Error loading areas:', error);
     } finally {
@@ -154,35 +336,85 @@ export const SelectionPage: React.FC = () => {
 
   const loadPontos = async (areaId: string) => {
     setLoading(prev => ({ ...prev, pontos: true }));
+    const CACHE_KEY = `cached_pontos_${areaId}`;
+    let data: PontoDeColeta[] = [];
     
     try {
-      const { data, error } = await supabase
-        .from('ponto_de_coleta')
-        .select('*')
-        .eq('area_de_trabalho_id', areaId)
-        .order('nome');
+      // 1. Tentar carregar do cache local primeiro
+      try {
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        if (cachedData) {
+          data = JSON.parse(cachedData);
+          setPontos(data);
+          console.log('🔍 Pontos loaded from cache for area', areaId, ':', data.length, 'items');
+        }
+      } catch (cacheError) {
+        console.error('❌ Error reading pontos cache:', cacheError);
+      }
 
-      if (error) throw error;
-      setPontos(data || []);
+      // 2. Se online, buscar dados atualizados do Supabase
+      if (isOnline) {
+        console.log('🔍 Loading pontos from Supabase for area:', areaId);
+        
+        const { data: supabaseData, error } = await supabase
+          .from('ponto_de_coleta')
+          .select('*')
+          .eq('area_de_trabalho_id', areaId)
+          .order('nome');
+
+        if (error) throw error;
+        
+        if (supabaseData) {
+          console.log('📊 Pontos loaded from Supabase:', supabaseData.length, 'items');
+          data = supabaseData;
+          setPontos(data);
+          
+          // Atualizar cache
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+            console.log('✅ Pontos cached successfully');
+          } catch (cacheError) {
+            console.error('❌ Error caching pontos:', cacheError);
+          }
+        }
+      } else if (data.length === 0) {
+        console.log('❌ Offline and no cached pontos available for area:', areaId);
+      }
       
-      // Load medições for today to mark completed points
-      if (data && data.length > 0) {
+      // Load medições for today to mark completed points (only if we have pontos)
+      if (data.length > 0) {
         await loadMedicoesDeHoje(data.map(p => p.id));
+      } else {
+        // Clear any previous medições state if no pontos available
+        setPontosComMedicoes(new Set());
       }
     } catch (error) {
       console.error('Error loading pontos:', error);
+      // If error occurred but we have cached data, use it
+      if (data.length === 0) {
+        setPontosComMedicoes(new Set());
+      }
     } finally {
       setLoading(prev => ({ ...prev, pontos: false }));
     }
   };
 
   const loadMedicoesDeHoje = async (pontoIds: string[]) => {
+    // Skip loading medições if offline to avoid errors
+    if (!isOnline) {
+      console.log('ℹ️ Offline: Skipping medições check');
+      setPontosComMedicoes(new Set());
+      return;
+    }
+    
     setLoading(prev => ({ ...prev, medicoes: true }));
     
     try {
+      console.log('🔍 Loading medições for today...');
+      
       const hoje = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
       const amanha = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      
+
       const { data, error } = await supabase
         .from('medicao')
         .select('ponto_de_coleta_id')
@@ -194,9 +426,12 @@ export const SelectionPage: React.FC = () => {
       
       const pontosComMedicoesSet = new Set(data?.map(m => m.ponto_de_coleta_id) || []);
       setPontosComMedicoes(pontosComMedicoesSet);
-      
+      console.log('📊 Pontos with measurements today:', pontosComMedicoesSet.size);
+
     } catch (error) {
       console.error('Error loading medições:', error);
+      // Se der erro, limpa o set para não mostrar informação incorreta
+      setPontosComMedicoes(new Set());
     } finally {
       setLoading(prev => ({ ...prev, medicoes: false }));
     }
@@ -227,7 +462,11 @@ export const SelectionPage: React.FC = () => {
           <h2 className="text-xl font-bold text-gray-900 mb-2">
             Selecione o Local para Medição
           </h2>
-         
+          {!isOnline && (
+            <p className="text-sm text-orange-600 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 inline-flex items-center">
+              📱 Modo Offline - Usando dados em cache
+            </p>
+          )}
         </div>
 
         {/* Progress Indicator */}
@@ -379,7 +618,9 @@ export const SelectionPage: React.FC = () => {
                             {jaColetado && (
                               <div className="flex items-center space-x-1">
                                 <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                <span className="text-xs text-green-600 font-medium">Coletado hoje</span>
+                                <span className="text-xs text-green-600 font-medium">
+                                  {isOnline ? 'Coletado hoje' : 'Há dados pendentes'}
+                                </span>
                               </div>
                             )}
                           </div>
@@ -401,7 +642,10 @@ export const SelectionPage: React.FC = () => {
                   <p className="text-sm text-primary">
                     💡 <strong>Dica:</strong> Pontos marcados com{' '}
                     <CheckCircle2 className="inline h-4 w-4 text-green-500 mx-1" />
-                    já possuem medições cadastradas para hoje.
+                    {isOnline 
+                      ? 'já possuem medições cadastradas para hoje.' 
+                      : 'podem ter dados de medições pendentes.'
+                    }
                   </p>
                 </div>
               </div>
