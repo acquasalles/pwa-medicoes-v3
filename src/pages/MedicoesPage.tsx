@@ -633,16 +633,33 @@ export const MedicoesPage: React.FC = () => {
         if (valor !== undefined && valor !== '') {
           const tipo = tipos.find(t => t.id === tipoId);
           let processedValue = valor;
+          let numericValue = 0; // Default numeric value for non-numeric types
+          let storedParametro = tipo?.nome;
           
           // Convert boolean strings to actual booleans, then to numbers for storage
           if (tipo?.input_type === 'boolean' || tipo?.tipo === 'boolean') {
             const boolValue = valor === 'true' || valor === true;
-            processedValue = boolValue ? 1 : 0; // Store as 1/0 in the valor field
+            numericValue = boolValue ? 1 : 0; // Store as 1/0 in the valor field
+          } else if (tipo?.input_type === 'number') {
+            // For numeric inputs, convert to number
+            numericValue = Number(processedValue);
+            // If conversion fails, use 0 as fallback
+            if (isNaN(numericValue)) {
+              numericValue = 0;
+            }
+          } else if (['text', 'textarea', 'select'].includes(tipo?.input_type || '')) {
+            // For text-based inputs, store the actual value in parametro and use 0 for valor
+            numericValue = 0;
+            storedParametro = `${tipo?.nome}: ${String(processedValue)}`;
+          } else {
+            // Fallback for other input types
+            const convertedValue = Number(processedValue);
+            numericValue = isNaN(convertedValue) ? 0 : convertedValue;
           }
           
           medicaoItems.push({
-            parametro: tipo?.nome,
-            valor: Number(processedValue),
+            parametro: storedParametro,
+            valor: numericValue,
             tipo_medicao_id: tipoId,
             tipo_medicao_nome: tipo?.nome,
           });
