@@ -3,6 +3,7 @@ const urlsToCache = [
   '/',
   '/manifest.json',
   '/vite.svg',
+  '/logo.png',
   'https://images.pexels.com/photos/5726794/pexels-photo-5726794.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&fit=crop',
   'https://images.pexels.com/photos/5726794/pexels-photo-5726794.jpeg?auto=compress&cs=tinysrgb&w=192&h=192&fit=crop',
   'https://images.pexels.com/photos/5726794/pexels-photo-5726794.jpeg?auto=compress&cs=tinysrgb&w=512&h=512&fit=crop',
