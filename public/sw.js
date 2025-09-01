@@ -13,11 +13,43 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('✅ Service Worker: Cache opened, adding resources...');
-        return cache.addAll(urlsToCache);
+        return cache.addAll(urlsToCache)
+          .catch(async (error) => {
+            console.error('❌ Service Worker: addAll failed:', error);
+            
+            // Try caching files individually to identify which one is failing
+            const results = [];
+            for (const url of urlsToCache) {
+              try {
+                console.log('🔍 Service Worker: Trying to cache:', url);
+                await cache.add(url);
+                console.log('✅ Service Worker: Successfully cached:', url);
+                results.push({ url, success: true });
+              } catch (individualError) {
+                console.error('❌ Service Worker: Failed to cache:', url, individualError);
+                results.push({ url, success: false, error: individualError });
+              }
+            }
+            
+            console.log('📊 Service Worker: Cache results:', results);
+            
+            // Continue installation even if some resources fail
+            const successCount = results.filter(r => r.success).length;
+            console.log(`📈 Service Worker: Cached ${successCount}/${urlsToCache.length} resources`);
+            
+            // Re-throw error only if no resources were cached
+            if (successCount === 0) {
+              throw error;
+            }
+          });
       })
       .then(() => {
         console.log('✅ Service Worker: All resources cached');
         return self.skipWaiting(); // Force activation
+      })
+      .catch((error) => {
+        console.error('❌ Service Worker: Installation failed completely:', error);
+        throw error;
       })
   );
 });
