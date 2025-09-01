@@ -51,20 +51,24 @@ const AppRoutes: React.FC = () => {
       {/* PWA Components */}
       <UpdatePrompt />
       <OfflineIndicator />
-      <InstallPrompt />
     </>
   );
 };
 
 function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <Router>
-          <ProtectedRoutes />
-        </Router>
-      </ToastProvider>
-    </AuthProvider>
+    <>
+      {/* PWA Install Prompt - Available before authentication */}
+      <InstallPrompt />
+      
+      <AuthProvider>
+        <ToastProvider>
+          <Router>
+            <ProtectedRoutes />
+          </Router>
+        </ToastProvider>
+      </AuthProvider>
+    </>
   );
 }
 
