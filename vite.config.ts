@@ -30,26 +30,26 @@ export default defineConfig({
         lang: 'pt-BR',
         icons: [
           {
-            src: 'pwa-64x64.png',
-            sizes: '64x64',
-            type: 'image/png'
+            src: 'svg-icon-any.svg',
+            sizes: 'any',
+            type: 'image/svg+xml'
           },
           {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
+            src: 'svg-icon-any.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
             purpose: 'any maskable'
           },
           {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
+            src: 'svg-icon-any.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
             purpose: 'any'
           },
           {
-            src: 'maskable-icon-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
+            src: 'svg-icon-any.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
             purpose: 'maskable'
           }
         ],
@@ -62,8 +62,8 @@ export default defineConfig({
             url: '/medicoes',
             icons: [
               {
-                src: 'pwa-192x192.png',
-                sizes: '192x192'
+                src: 'svg-icon-any.svg',
+                sizes: 'any'
               }
             ]
           },
@@ -74,8 +74,8 @@ export default defineConfig({
             url: '/selecao',
             icons: [
               {
-                src: 'pwa-192x192.png',
-                sizes: '192x192'
+                src: 'svg-icon-any.svg',
+                sizes: 'any'
               }
             ]
           }
