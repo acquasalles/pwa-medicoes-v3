@@ -174,6 +174,123 @@
       }
     </style>
     
+    <!-- Splash Screen -->
+    <div id="splash-screen" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(135deg, #B6F2EC 0%, #ffffff 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      font-family: 'Roboto', sans-serif;
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    ">
+      <div style="
+        text-align: center;
+        animation: fadeInUp 1s ease-out;
+      ">
+        <!-- Logo -->
+        <div style="
+          width: 120px;
+          height: 120px;
+          margin: 0 auto 24px;
+          background: rgba(255, 255, 255, 0.9);
+          border-radius: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 8px 32px rgba(32, 59, 140, 0.1);
+          backdrop-filter: blur(10px);
+        ">
+          <img 
+            src="https://wanrdteafvqtcivcrtfy.supabase.co/storage/v1/object/public/medicao-photos/47397699000139/43771bee-b847-4f78-bd05-797f6ab19b6e_300ad69c-268b-4a5f-befc-fbaee3a110cc_0/logo%20(1).png"
+            alt="Acquasalles Logo"
+            style="
+              max-width: 80px;
+              max-height: 80px;
+              object-fit: contain;
+            "
+            onerror="this.style.display='none'"
+          />
+        </div>
+        
+        <!-- Title -->
+        <h1 style="
+          color: #203B8C;
+          font-size: 28px;
+          font-weight: 700;
+          margin: 0 0 8px 0;
+          letter-spacing: -0.5px;
+        ">Sistema de Medições</h1>
+        
+        <!-- Subtitle -->
+        <p style="
+          color: #049DD9;
+          font-size: 18px;
+          font-weight: 500;
+          margin: 0 0 40px 0;
+          letter-spacing: 0.5px;
+        ">Acquasalles</p>
+        
+        <!-- Loading Animation -->
+        <div style="
+          width: 40px;
+          height: 40px;
+          margin: 0 auto;
+          border: 3px solid rgba(32, 59, 140, 0.2);
+          border-top: 3px solid #203B8C;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        "></div>
+      </div>
+      
+      <!-- Bottom Text -->
+      <div style="
+        position: absolute;
+        bottom: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        text-align: center;
+      ">
+        <p style="
+          color: #049DD9;
+          font-size: 14px;
+          font-weight: 400;
+          margin: 0;
+          opacity: 0.8;
+        ">Carregando aplicativo...</p>
+      </div>
+    </div>
+    
+    <!-- Animations -->
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      @keyframes fadeInUp {
+        0% {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      .splash-fade-out {
+        opacity: 0 !important;
+        transform: scale(0.95) !important;
+      }
+    </style>
+    
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
