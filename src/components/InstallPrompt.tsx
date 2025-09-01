@@ -1,178 +1,148 @@
 import React from 'react';
-import { Download, X, Smartphone, Zap, WifiOff } from 'lucide-react';
+import { X, Smartphone, Zap, Wifi, Download } from 'lucide-react';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
 
 export const InstallPrompt: React.FC = () => {
-  const { 
-    isInstallable, 
-    shouldShowPrompt, 
-    handleInstallClick, 
+  const {
+    isInstallable,
+    showManualInstructions,
+    shouldShowPrompt,
+    isFirstVisit,
+    handleInstallClick,
     dismissPrompt,
-    isFirstVisit 
   } = useInstallPrompt();
 
-  // Don't render if conditions are not met
-  if (!shouldShowPrompt) return null;
+  console.log('🎨 InstallPrompt render:', { shouldShowPrompt, isInstallable, showManualInstructions, isFirstVisit });
+  if (!shouldShowPrompt) {
+    console.log('❌ InstallPrompt: Not rendering - shouldShowPrompt is false');
+    return null;
+  }
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isAndroid = /Android/.test(navigator.userAgent);
 
-  // Show automatic install prompt if available
-  if (isInstallable) {
-    return (
-      <div className="fixed inset-x-4 bottom-4 md:left-auto md:right-4 md:max-w-sm bg-white border border-gray-200 rounded-2xl shadow-2xl p-6 z-50 animate-slide-up">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center">
-              <Smartphone className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Instalar App</h3>
-              <p className="text-xs text-gray-500">Acesso rápido e offline</p>
-            </div>
+  console.log('✅ InstallPrompt: Rendering prompt', { isIOS, isAndroid, isInstallable, showManualInstructions });
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50 install-prompt animate-slide-up">
+      <div className="bg-white rounded-t-3xl p-6 w-full max-w-md mx-auto animate-slide-up shadow-2xl">
+        <button
+          onClick={dismissPrompt}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
+          aria-label="Fechar"
+        >
+          <X size={24} />
+        </button>
+
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Smartphone className="text-white" size={32} />
           </div>
-          <button
-            onClick={dismissPrompt}
-            className="text-gray-400 hover:text-gray-600 p-1"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          
+          {isFirstVisit ? (
+            <div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">
+                Bem-vindo! 👋
+              </h3>
+              <p className="text-gray-600 text-sm">
+                Para uma melhor experiência, instale nosso app
+              </p>
+            </div>
+          ) : (
+            <div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">
+                Instalar App
+              </h3>
+              <p className="text-gray-600 text-sm">
+                Tenha acesso rápido e offline
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Benefits */}
         <div className="space-y-3 mb-6">
           <div className="flex items-center space-x-3 text-sm text-gray-700">
-            <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <Zap className="w-3 h-3 text-green-600" />
+            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+              <Zap className="text-green-600" size={16} />
             </div>
-            <span>Acesso instantâneo sem abrir o navegador</span>
+            <span>Acesso instantâneo sem abrir navegador</span>
           </div>
+          
           <div className="flex items-center space-x-3 text-sm text-gray-700">
-            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <WifiOff className="w-3 h-3 text-blue-600" />
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <Wifi className="text-blue-600" size={16} />
             </div>
             <span>Funciona offline e salva dados localmente</span>
           </div>
+          
           <div className="flex items-center space-x-3 text-sm text-gray-700">
-            <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <Download className="w-3 h-3 text-purple-600" />
+            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+              <Download className="text-purple-600" size={16} />
             </div>
-            <span>Não ocupa espaço, é apenas um atalho inteligente</span>
+            <span>Não ocupa espaço - apenas um atalho inteligente</span>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-3">
-          <button
-            onClick={handleInstallClick}
-            className="flex-1 bg-gradient-to-r from-primary to-secondary hover:from-primary-light hover:to-secondary text-white px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
-          >
-            <Download className="w-4 h-4 inline mr-2" />
-            Instalar Agora
-          </button>
+        {isInstallable ? (
+          <div className="space-y-3">
+            <button
+              onClick={handleInstallClick}
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
+            >
+              Instalar Agora
+            </button>
+            <button
+              onClick={dismissPrompt}
+              className="w-full text-gray-500 font-medium py-2 hover:text-gray-700 transition-colors"
+            >
+              Agora não
+            </button>
+          </div>
+        ) : showManualInstructions ? (
+          <div className="space-y-4">
+            <div className="bg-gray-50 rounded-xl p-4 text-sm">
+              {isIOS ? (
+                <div>
+                  <p className="font-medium text-gray-800 mb-2">Para instalar no iOS:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-gray-600">
+                    <li>Toque no ícone de compartilhar (□↗) no Safari</li>
+                    <li>Role para baixo e toque em "Adicionar à Tela Inicial"</li>
+                    <li>Toque em "Adicionar" no canto superior direito</li>
+                  </ol>
+                </div>
+              ) : isAndroid ? (
+                <div>
+                  <p className="font-medium text-gray-800 mb-2">Para instalar no Android:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-gray-600">
+                    <li>Toque no menu (⋮) do navegador</li>
+                    <li>Toque em "Adicionar à tela inicial" ou "Instalar app"</li>
+                    <li>Confirme tocando em "Adicionar" ou "Instalar"</li>
+                  </ol>
+                </div>
+              ) : (
+                <div>
+                  <p className="font-medium text-gray-800 mb-2">Para instalar:</p>
+                  <p className="text-gray-600">
+                    Use o menu do seu navegador e procure por "Adicionar à tela inicial" ou "Instalar app"
+                  </p>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={dismissPrompt}
+              className="w-full text-gray-500 font-medium py-2 hover:text-gray-700 transition-colors"
+            >
+              Entendi, obrigado
+            </button>
+          </div>
+        ) : (
           <button
             onClick={dismissPrompt}
-            className="px-4 py-3 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-medium transition-colors"
+            className="w-full bg-gray-200 text-gray-700 font-medium py-3 px-6 rounded-xl hover:bg-gray-300 transition-colors"
           >
-            Depois
+            Fechar
           </button>
-        </div>
-        
-        {isFirstVisit && (
-          <p className="text-xs text-center text-gray-500 mt-3">
-            ✨ Primeira visita? Instale para a melhor experiência!
-          </p>
         )}
       </div>
-    );
-  }
-  
-  // Show manual instructions for mobile browsers without install prompt
-  return (
-    <div className="fixed inset-x-4 bottom-4 md:left-auto md:right-4 md:max-w-sm bg-white border border-gray-200 rounded-2xl shadow-2xl p-6 z-50 animate-slide-up">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-2">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center">
-            <Smartphone className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">Instalar como App</h3>
-            <p className="text-xs text-gray-500">Para uma experiência completa</p>
-          </div>
-        </div>
-        <button
-          onClick={dismissPrompt}
-          className="text-gray-400 hover:text-gray-600 p-1"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-
-      <div className="mb-6">
-        <div>
-          <p className="text-sm font-medium text-gray-900 mb-3">
-            📱 Para instalar no iOS:
-          </p>
-          <p className="text-sm text-gray-600 mt-1">
-            Instale o Sistema de Medições para acesso rápido e funcionalidade offline
-          </p>
-        </div>
-        
-        {isIOS && (
-          <div className="space-y-3">
-            <div className="space-y-2 text-sm text-gray-700 bg-gray-50 rounded-lg p-3">
-              <p>1. Toque no ícone <strong>Compartilhar</strong> (□↑) no Safari</p>
-              <p>2. Role para baixo e toque em <strong>"Adicionar à Tela de Início"</strong></p>
-              <p>3. Confirme tocando em <strong>"Adicionar"</strong></p>
-            </div>
-          </div>
-        )}
-        {isAndroid && (
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-gray-900 mb-3">
-              📱 Para instalar no Android:
-            </p>
-            <div className="space-y-2 text-sm text-gray-700 bg-gray-50 rounded-lg p-3">
-              <p>1. Toque no menu do navegador (⋮)</p>
-              <p>2. Selecione <strong>"Adicionar à tela inicial"</strong></p>
-              <p>3. Confirme tocando em <strong>"Adicionar"</strong></p>
-            </div>
-          </div>
-        )}
-        {!isIOS && !isAndroid && (
-          <div className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3">
-            <p>Use o menu do seu navegador para adicionar à tela inicial</p>
-          </div>
-        )}
-      </div>
-      
-      {/* Benefits */}
-      <div className="space-y-2 mb-6">
-        <div className="flex items-center space-x-2 text-xs text-gray-600">
-          <Zap className="w-3 h-3 text-green-500" />
-          <span>Acesso instantâneo</span>
-        </div>
-        <div className="flex items-center space-x-2 text-xs text-gray-600">
-          <WifiOff className="w-3 h-3 text-blue-500" />
-          <span>Funciona offline</span>
-        </div>
-      </div>
-
-      {/* Action Button */}
-      <button
-        onClick={dismissPrompt}
-        className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary-light hover:to-secondary text-white px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
-      >
-        Entendi
-      </button>
-      
-      {isFirstVisit && (
-        <p className="text-xs text-center text-gray-500 mt-3">
-          ✨ Primeira visita? Instale para a melhor experiência!
-        </p>
-      )}
     </div>
   );
 };
