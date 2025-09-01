@@ -39,11 +39,12 @@ export const SelectionPage: React.FC = () => {
       return;
     }
 
-    setLoading(prev => ({ ...prev, preload: true }));
-    console.log('🚀 Starting full data preload...');
+    console.log('🚀 Starting optimized data preload...');
     
     try {
-      // 1. Load and cache all clientes
+      // 1. Load and cache all clientes (but don't block UI)
+      await new Promise(resolve => setTimeout(resolve, 100)); // Allow UI to render
+      
       const { data: clientesData, error: clientesError } = await supabase
         .from('clientes')
         .select('*')
@@ -53,62 +54,73 @@ export const SelectionPage: React.FC = () => {
       
       if (clientesData) {
         localStorage.setItem('cached_clientes', JSON.stringify(clientesData));
-        console.log('✅ Preloaded', clientesData.length, 'clientes');
+        console.log('✅ Preloaded', clientesData.length, 'clientes - processing areas...');
 
-        // 2. For each cliente, load and cache all areas
-        for (const cliente of clientesData) {
-          const { data: areasData, error: areasError } = await supabase
-            .from('area_de_trabalho')
-            .select('*')
-            .eq('cliente_id', cliente.id)
-            .order('nome_area');
-
-          if (areasError) {
-            console.error('❌ Error preloading areas for cliente', cliente.id, ':', areasError);
-            continue;
-          }
-
-          if (areasData) {
-            const AREAS_CACHE_KEY = `cached_areas_${cliente.id}`;
-            localStorage.setItem(AREAS_CACHE_KEY, JSON.stringify(areasData));
-            console.log('✅ Preloaded', areasData.length, 'areas for cliente', cliente.id);
-
-            // 3. For each area, load and cache all pontos
-            for (const area of areasData) {
-              const { data: pontosData, error: pontosError } = await supabase
-                .from('ponto_de_coleta')
+        // 2. Process areas in smaller batches to avoid blocking UI
+        const batchSize = 10;
+        for (let i = 0; i < clientesData.length; i += batchSize) {
+          const clienteBatch = clientesData.slice(i, i + batchSize);
+          
+          // Allow UI to stay responsive
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
+          await Promise.all(clienteBatch.map(async (cliente) => {
+            try {
+              const { data: areasData, error: areasError } = await supabase
+                .from('area_de_trabalho')
                 .select('*')
-                .eq('area_de_trabalho_id', area.id)
-                .order('nome');
+                .eq('cliente_id', cliente.id)
+                .order('nome_area');
 
-              if (pontosError) {
-                console.error('❌ Error preloading pontos for area', area.id, ':', pontosError);
-                continue;
+              if (areasError) {
+                console.error('❌ Error preloading areas for cliente', cliente.id, ':', areasError);
+                return;
               }
 
-              if (pontosData) {
-                const PONTOS_CACHE_KEY = `cached_pontos_${area.id}`;
-                localStorage.setItem(PONTOS_CACHE_KEY, JSON.stringify(pontosData));
-                console.log('✅ Preloaded', pontosData.length, 'pontos for area', area.id);
+              if (areasData) {
+                const AREAS_CACHE_KEY = `cached_areas_${cliente.id}`;
+                localStorage.setItem(AREAS_CACHE_KEY, JSON.stringify(areasData));
+                
+                // Process pontos for each area
+                await Promise.all(areasData.map(async (area) => {
+                  try {
+                    const { data: pontosData, error: pontosError } = await supabase
+                      .from('ponto_de_coleta')
+                      .select('*')
+                      .eq('area_de_trabalho_id', area.id)
+                      .order('nome');
+
+                    if (!pontosError && pontosData) {
+                      const PONTOS_CACHE_KEY = `cached_pontos_${area.id}`;
+                      localStorage.setItem(PONTOS_CACHE_KEY, JSON.stringify(pontosData));
+                    }
+                  } catch (error) {
+                    console.error('❌ Error preloading pontos for area', area.id, ':', error);
+                  }
+                }));
               }
+            } catch (error) {
+              console.error('❌ Error preloading data for cliente', cliente.id, ':', error);
             }
-          }
+          }));
+          
+          // Log progress
+          console.log(`📈 Processed batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(clientesData.length/batchSize)}`);
         }
       }
 
-      // 4. Load and cache tipos de medicao (global)
+      // Load tipos medicao separately (lighter operation)
+      await new Promise(resolve => setTimeout(resolve, 100));
       console.log('🔍 Preloading tipos medicao...');
       try {
-        const { data: tiposData, error: tiposError } = await supabase
+          const { data: areasData, error: areasError } = await supabase
           .from('tipos_medicao')
           .select('*')
           .order('nome');
 
-        if (tiposError) {
-          console.error('❌ Error preloading tipos medicao:', tiposError);
-        } else if (tiposData) {
-          localStorage.setItem('cached_tipos_medicao', JSON.stringify(tiposData));
-          console.log('✅ Preloaded', tiposData.length, 'tipos medicao');
+        if (!areasError && areasData) {
+          localStorage.setItem('cached_tipos_medicao', JSON.stringify(areasData));
+          console.log('✅ Preloaded', areasData.length, 'tipos medicao');
         }
       } catch (error) {
         console.error('❌ Error preloading tipos medicao:', error);
@@ -116,12 +128,10 @@ export const SelectionPage: React.FC = () => {
 
       // Mark preload as completed
       localStorage.setItem(PRELOAD_FLAG, Date.now().toString());
-      console.log('🎉 Full data preload completed successfully!');
+      console.log('🎉 Optimized data preload completed successfully!');
       
     } catch (error) {
       console.error('❌ Error during data preload:', error);
-    } finally {
-      setLoading(prev => ({ ...prev, preload: false }));
     }
   };
 
@@ -155,12 +165,16 @@ export const SelectionPage: React.FC = () => {
     const initializePage = async () => {
       const savedState = loadSelectionState();
       
-      // Start preload in background if online
-      if (isOnline) {
-        preloadAllData();
-      }
-      
+      // Load clientes first (immediate need)
       await loadClientes();
+      
+      // Start preload in background if online (non-blocking)
+      if (isOnline) {
+        // Run preload in background without blocking UI
+        setTimeout(() => {
+          preloadAllData().catch(console.error);
+        }, 1000); // Delay to allow UI to render first
+      }
       
       // Restore previous selections if available
       if (savedState) {
@@ -453,14 +467,6 @@ export const SelectionPage: React.FC = () => {
               📱 Modo Offline - Usando dados em cache
             </p>
           )}
-          
-          {loading.preload && (
-            <div className="text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 inline-flex items-center mt-2">
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              Carregando dados para uso offline...
-            </div>
-          )}
-         
         </div>
 
         {/* Progress Indicator */}
