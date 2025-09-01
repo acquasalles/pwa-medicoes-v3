@@ -13,26 +13,26 @@
   "lang": "pt-BR",
   "icons": [
     {
-      "src": "https://images.pexels.com/photos/5726794/pexels-photo-5726794.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&fit=crop",
-      "sizes": "64x64",
-      "type": "image/png"
+      "src": "svg-icon-any.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     },
     {
-      "src": "https://images.pexels.com/photos/5726794/pexels-photo-5726794.jpeg?auto=compress&cs=tinysrgb&w=192&h=192&fit=crop", 
-      "sizes": "192x192",
-      "type": "image/png",
+      "src": "svg-icon-any.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "https://images.pexels.com/photos/5726794/pexels-photo-5726794.jpeg?auto=compress&cs=tinysrgb&w=512&h=512&fit=crop",
-      "sizes": "512x512", 
-      "type": "image/png",
+      "src": "svg-icon-any.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "https://images.pexels.com/photos/5726794/pexels-photo-5726794.jpeg?auto=compress&cs=tinysrgb&w=512&h=512&fit=crop",
-      "sizes": "512x512",
-      "type": "image/png", 
+      "src": "svg-icon-any.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "maskable"
     }
   ],
@@ -45,8 +45,8 @@
       "url": "/medicoes",
       "icons": [
         {
-          "src": "https://images.pexels.com/photos/5726794/pexels-photo-5726794.jpeg?auto=compress&cs=tinysrgb&w=192&h=192&fit=crop",
-          "sizes": "192x192"
+          "src": "svg-icon-any.svg",
+          "sizes": "any"
         }
       ]
     },
@@ -57,8 +57,8 @@
       "url": "/selecao",
       "icons": [
         {
-          "src": "https://images.pexels.com/photos/5726794/pexels-photo-5726794.jpeg?auto=compress&cs=tinysrgb&w=192&h=192&fit=crop",
-          "sizes": "192x192"
+          "src": "svg-icon-any.svg",
+          "sizes": "any"
         }
       ]
     }

@@ -1,0 +1,16 @@
+<svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+	<title>logo (1)</title>
+	<style>
+		tspan { white-space:pre } 
+		.s0 { fill: #2c1987 } 
+		.s1 { fill: #042f70 } 
+		.s2 { fill: #2846c0 } 
+	</style>
+	<g id="Folder 1">
+		<path id="Shape 6" fill-rule="evenodd" class="s0" d="m-57 166v79h-79v-79z"/>
+		<path id="Shape 3 copy" fill-rule="evenodd" class="s1" d="m225.24 84.92l-166.83 327.06 104.91-1.21 156.74-325.85z"/>
+		<path id="Shape 3" fill-rule="evenodd" class="s2" d="m320.06 84.92l135 260.35h-96.42l-133.4-260.35z"/>
+		<text id="" style="transform: matrix(1,0,0,1,223,370)" >
+		</text>
+	</g>
+</svg>
