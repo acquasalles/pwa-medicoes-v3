@@ -456,7 +456,7 @@ export const MedicoesPage: React.FC = () => {
       setContextData(contextData);
 
       // Load measurement types with cache support
-      await loadTiposMedicao();
+      await loadTiposMedicao(contextData.ponto);
     } catch (error) {
       console.error('❌ Error loading context data:', error);
     } finally {
@@ -464,7 +464,7 @@ export const MedicoesPage: React.FC = () => {
     }
   };
 
-  const loadTiposMedicao = async () => {
+  const loadTiposMedicao = async (ponto?: PontoDeColeta) => {
     const TIPOS_CACHE_KEY = 'cached_tipos_medicao';
     let data: TipoMedicao[] = [];
     
@@ -474,7 +474,6 @@ export const MedicoesPage: React.FC = () => {
         const cachedData = localStorage.getItem(TIPOS_CACHE_KEY);
         if (cachedData) {
           data = JSON.parse(cachedData);
-          setTipos(data);
           console.log('🔍 Tipos medicao loaded from cache:', data.length, 'items');
         }
       } catch (cacheError) {
@@ -490,9 +489,10 @@ export const MedicoesPage: React.FC = () => {
           .select('*')
           .order('nome');
 
-        // Filter by tipos_medicao if specified in ponto_de_coleta
-        if (contextData.ponto?.tipos_medicao && contextData.ponto.tipos_medicao.length > 0) {
-          tiposQuery = tiposQuery.in('id', contextData.ponto.tipos_medicao);
+        // Filter by tipos_medicao if specified in ponto_de_coleta and we have the ponto data
+        if (ponto?.tipos_medicao && ponto.tipos_medicao.length > 0) {
+          console.log('🎯 Filtering tipos for ponto:', ponto.tipos_medicao);
+          tiposQuery = tiposQuery.in('id', ponto.tipos_medicao);
         }
 
         const { data: tiposData, error: tiposError } = await tiposQuery;
@@ -500,7 +500,6 @@ export const MedicoesPage: React.FC = () => {
         if (!tiposError && tiposData) {
           console.log('📊 Tipos medicao loaded from Supabase:', tiposData.length, 'items');
           data = tiposData;
-          setTipos(data);
           
           // Update cache
           try {
@@ -514,19 +513,22 @@ export const MedicoesPage: React.FC = () => {
         console.log('❌ Offline and no cached tipos medicao available');
       }
 
-      // Filter tipos by ponto's allowed types if specified
-      if (contextData.ponto?.tipos_medicao && contextData.ponto.tipos_medicao.length > 0) {
+      // Filter tipos by ponto's allowed types if specified (applies to both online and offline data)
+      if (ponto?.tipos_medicao && ponto.tipos_medicao.length > 0) {
         const filteredTipos = data.filter(tipo => 
-          contextData.ponto!.tipos_medicao!.includes(tipo.id)
+          ponto.tipos_medicao!.includes(tipo.id)
         );
         setTipos(filteredTipos);
-        console.log('🎯 Filtered tipos for ponto:', filteredTipos.length, 'items');
+        console.log('🎯 Final filtered tipos for ponto:', filteredTipos.length, 'of', data.length, 'total tipos');
       } else {
+        console.log('ℹ️ No tipo filtering applied - showing all tipos:', data.length, 'items');
         setTipos(data);
       }
 
     } catch (error) {
       console.error('❌ Error loading tipos medicao:', error);
+      // On error, still try to set an empty array to prevent UI issues
+      setTipos([]);
     }
   };
 
