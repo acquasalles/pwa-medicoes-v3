@@ -363,39 +363,257 @@ export const MedicoesPage: React.FC = () => {
     setLoading(true);
     
     try {
-      // Load context data
-      const [clienteRes, areaRes, pontoRes] = await Promise.all([
-        supabase.from('clientes').select('*').eq('id', clienteId).single(),
-        supabase.from('area_de_trabalho').select('*').eq('id', areaId).single(),
-        supabase.from('ponto_de_coleta').select('*').eq('id', pontoId).single(),
-      ]);
+      console.log('🔍 Loading context data for medições...');
+      
+      // Load context data with cache support
+      let contextData: {
+        cliente?: Cliente;
+        area?: AreaDeTrabalho;
+        ponto?: PontoDeColeta;
+      } = {};
 
-      setContextData({
-        cliente: clienteRes.data || undefined,
-        area: areaRes.data || undefined,
-        ponto: pontoRes.data || undefined,
-      });
+      // Load cliente data
+      const clienteCacheKey = 'cached_clientes';
+      try {
+        const cachedClientes = localStorage.getItem(clienteCacheKey);
+        if (cachedClientes) {
+          const clientes = JSON.parse(cachedClientes);
+          contextData.cliente = clientes.find((c: Cliente) => c.id === clienteId);
+          console.log('✅ Cliente loaded from cache');
+        }
 
-      // Load available measurement types for this collection point
-      let tiposQuery = supabase
-        .from('tipos_medicao')
-        .select('*')
-        .order('nome');
+        if (isOnline && !contextData.cliente) {
+          console.log('🔍 Loading cliente from Supabase...');
+          const { data: clienteData, error: clienteError } = await supabase
+            .from('clientes')
+            .select('*')
+            .eq('id', clienteId)
+            .single();
 
-      // Filter by tipos_medicao if specified in ponto_de_coleta
-      if (pontoRes.data?.tipos_medicao && pontoRes.data.tipos_medicao.length > 0) {
-        tiposQuery = tiposQuery.in('id', pontoRes.data.tipos_medicao);
+          if (!clienteError && clienteData) {
+            contextData.cliente = clienteData;
+            console.log('✅ Cliente loaded from Supabase');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error loading cliente:', error);
       }
 
-      const { data: tiposData, error: tiposError } = await tiposQuery;
+      // Load area data
+      const areaCacheKey = `cached_areas_${clienteId}`;
+      try {
+        const cachedAreas = localStorage.getItem(areaCacheKey);
+        if (cachedAreas) {
+          const areas = JSON.parse(cachedAreas);
+          contextData.area = areas.find((a: AreaDeTrabalho) => a.id === areaId);
+          console.log('✅ Area loaded from cache');
+        }
 
-      if (tiposError) throw tiposError;
-      setTipos(tiposData || []);
+        if (isOnline && !contextData.area) {
+          console.log('🔍 Loading area from Supabase...');
+          const { data: areaData, error: areaError } = await supabase
+            .from('area_de_trabalho')
+            .select('*')
+            .eq('id', areaId)
+            .single();
 
+          if (!areaError && areaData) {
+            contextData.area = areaData;
+            console.log('✅ Area loaded from Supabase');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error loading area:', error);
+      }
+
+      // Load ponto data
+      const pontoCacheKey = `cached_pontos_${areaId}`;
+      try {
+        const cachedPontos = localStorage.getItem(pontoCacheKey);
+        if (cachedPontos) {
+          const pontos = JSON.parse(cachedPontos);
+          contextData.ponto = pontos.find((p: PontoDeColeta) => p.id === pontoId);
+          console.log('✅ Ponto loaded from cache');
+        }
+
+        if (isOnline && !contextData.ponto) {
+          console.log('🔍 Loading ponto from Supabase...');
+          const { data: pontoData, error: pontoError } = await supabase
+            .from('ponto_de_coleta')
+            .select('*')
+            .eq('id', pontoId)
+            .single();
+
+          if (!pontoError && pontoData) {
+            contextData.ponto = pontoData;
+            console.log('✅ Ponto loaded from Supabase');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error loading ponto:', error);
+      }
+
+      setContextData(contextData);
+
+      // Load measurement types with cache support
+      await loadTiposMedicao();
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('❌ Error loading context data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTiposMedicao = async () => {
+    const TIPOS_CACHE_KEY = 'cached_tipos_medicao';
+    let data: TipoMedicao[] = [];
+    
+    try {
+      // 1. Load from cache first
+      try {
+        const cachedData = localStorage.getItem(TIPOS_CACHE_KEY);
+        if (cachedData) {
+          data = JSON.parse(cachedData);
+          setTipos(data);
+          console.log('🔍 Tipos medicao loaded from cache:', data.length, 'items');
+        }
+      } catch (cacheError) {
+        console.error('❌ Error reading tipos medicao cache:', cacheError);
+      }
+
+      // 2. If online, fetch fresh data from Supabase
+      if (isOnline) {
+        console.log('🔍 Loading tipos medicao from Supabase...');
+        
+        let tiposQuery = supabase
+          .from('tipos_medicao')
+          .select('*')
+          .order('nome');
+
+        // Filter by tipos_medicao if specified in ponto_de_coleta
+        if (contextData.ponto?.tipos_medicao && contextData.ponto.tipos_medicao.length > 0) {
+          tiposQuery = tiposQuery.in('id', contextData.ponto.tipos_medicao);
+        }
+
+        const { data: tiposData, error: tiposError } = await tiposQuery;
+
+        if (!tiposError && tiposData) {
+          console.log('📊 Tipos medicao loaded from Supabase:', tiposData.length, 'items');
+          data = tiposData;
+          setTipos(data);
+          
+          // Update cache
+          try {
+            localStorage.setItem(TIPOS_CACHE_KEY, JSON.stringify(data));
+            console.log('✅ Tipos medicao cached successfully');
+          } catch (cacheError) {
+            console.error('❌ Error caching tipos medicao:', cacheError);
+          }
+        }
+      } else if (data.length === 0) {
+        console.log('❌ Offline and no cached tipos medicao available');
+      }
+
+      // Filter tipos by ponto's allowed types if specified
+      if (contextData.ponto?.tipos_medicao && contextData.ponto.tipos_medicao.length > 0) {
+        const filteredTipos = data.filter(tipo => 
+          contextData.ponto!.tipos_medicao!.includes(tipo.id)
+        );
+        setTipos(filteredTipos);
+        console.log('🎯 Filtered tipos for ponto:', filteredTipos.length, 'items');
+      } else {
+        setTipos(data);
+      }
+
+    } catch (error) {
+      console.error('❌ Error loading tipos medicao:', error);
+    }
+  };
+
+  // Show offline message if no context data available
+  if (!loading && (!contextData.cliente || !contextData.area || !contextData.ponto)) {
+    return (
+      <Layout title="Erro" showBackButton onBack={handleBack}>
+        <div className="text-center py-12">
+          <div className="mb-4">
+            <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Dados não disponíveis offline
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Os dados necessários não estão disponíveis no cache local. 
+              {isOnline 
+                ? 'Aguarde enquanto carregamos os dados...' 
+                : 'Conecte-se à internet para carregar os dados necessários.'
+              }
+            </p>
+            {!isOnline && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-orange-800">
+                📱 <strong>Dica:</strong> Navegue até a seleção online primeiro para cachear os dados necessários
+              </div>
+            )}
+          </div>
+          <button
+            onClick={handleBack}
+            className="px-6 py-3 bg-primary hover:bg-primary-light text-white rounded-lg transition-colors"
+          >
+            Voltar à Seleção
+          </button>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show loading if still loading context data
+  if (!contextData.cliente || !contextData.area || !contextData.ponto) {
+    return (
+      <Layout title="Carregando..." showBackButton onBack={handleBack}>
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-500 mr-3" />
+          <span className="text-gray-600">Carregando dados do contexto...</span>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Layout title="Carregando..." showBackButton onBack={handleBack}>
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-500 mr-3" />
+          <span className="text-gray-600">Preparando formulário...</span>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show message if no tipos de medição available
+  if (tipos.length === 0) {
+    return (
+      <Layout title="Medições" showBackButton onBack={handleBack}>
+        <div className="text-center py-12">
+          <div className="mb-4">
+            <Hash className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Nenhum tipo de medição disponível
+            </h2>
+            <p className="text-gray-600 mb-4">
+              {isOnline 
+                ? 'Não há tipos de medição configurados para este ponto de coleta.' 
+                : 'Tipos de medição não disponíveis offline. Conecte-se à internet.'
+              }
+            </p>
+          </div>
+          <button
+            onClick={handleBack}
+            className="px-6 py-3 bg-primary hover:bg-primary-light text-white rounded-lg transition-colors"
+          >
+            Voltar à Seleção
+          </button>
+        </div>
+      </Layout>
+    );
+  }</action>
     }
   };
 
