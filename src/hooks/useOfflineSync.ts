@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { PhotoService } from '../services/photoService';
+import { formatDateTime } from '../utils/formatters';
 
 interface PendingMedicao {
   id: string;

@@ -58,8 +58,8 @@ export const formatTime = (date: string | Date): string => {
 export const toLocalDateTimeString = (date?: Date): string => {
   const now = date || new Date();
   
-  // Ajustar para GMT-3 (subtrair 3 horas do UTC)
-  const gmt3Date = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+  // Criar data no fuso GMT-3 usando o Intl
+  const gmt3Date = new Date(now.toLocaleString('en-US', { timeZone: TIMEZONE }));
   
   // Formato YYYY-MM-DDTHH:mm para datetime-local
   return gmt3Date.toISOString().slice(0, 16);
@@ -69,10 +69,9 @@ export const toLocalDateTimeString = (date?: Date): string => {
  * Converte string datetime-local para Date em GMT-3
  */
 export const fromLocalDateTimeString = (dateTimeString: string): Date => {
-  // Cria date assumindo que é GMT-3
-  const date = new Date(dateTimeString + ':00.000Z'); // Add seconds and Z for UTC
-  // Adiciona 3 horas para compensar o GMT-3
-  return new Date(date.getTime() + (3 * 60 * 60 * 1000));
+  // Trata a string como horário local GMT-3
+  const localDate = new Date(dateTimeString);
+  return localDate;
 };
 
 /**
@@ -142,6 +141,23 @@ export const isToday = (date: string | Date): boolean => {
   
   return dateObj.toLocaleDateString('pt-BR', { timeZone: TIMEZONE }) === 
          today.toLocaleDateString('pt-BR', { timeZone: TIMEZONE });
+};
+
+/**
+ * Normaliza input numérico (converte vírgula para ponto)
+ */
+export const normalizeNumberInput = (value: string): string => {
+  return value.replace(',', '.');
+};
+
+/**
+ * Formata número para exibição (ponto para vírgula)
+ */
+export const formatNumberForDisplay = (value: number | string): string => {
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(numValue)) return '';
+  
+  return numValue.toString().replace('.', ',');
 };
 
 /**

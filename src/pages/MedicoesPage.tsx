@@ -8,7 +8,14 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { PhotoService } from '../services/photoService';
-import { formatDateTime, formatValueWithUnit, toLocalDateTimeString, fromLocalDateTimeString } from '../utils/formatters';
+import { 
+  formatDateTime, 
+  formatValueWithUnit, 
+  toLocalDateTimeString, 
+  fromLocalDateTimeString,
+  normalizeNumberInput,
+  formatNumberForDisplay 
+} from '../utils/formatters';
 import { 
   Loader2, 
   Save, 
@@ -108,6 +115,7 @@ export const MedicoesPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState<Record<string, boolean>>({});
   const [photoPreview, setPhotoPreview] = useState<Record<string, string[]>>({});
+  const [displayValues, setDisplayValues] = useState<Record<string, string>>({});
 
   const schema = createSchema(tipos);
   
@@ -129,6 +137,20 @@ export const MedicoesPage: React.FC = () => {
 
   const watchedValues = watch('medicoes');
   const watchedPhotos = watch('photos');
+
+  const handleNumberInputChange = (tipoId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = event.target.value;
+    const normalizedValue = normalizeNumberInput(rawValue);
+    
+    // Update display value (what user sees)
+    setDisplayValues(prev => ({
+      ...prev,
+      [tipoId]: rawValue
+    }));
+    
+    // Update form value (normalized for processing)
+    setValue(`medicoes.${tipoId}`, normalizedValue ? parseFloat(normalizedValue) : '');
+  };
 
   const handlePhotoUpload = (tipoId: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -326,12 +348,18 @@ export const MedicoesPage: React.FC = () => {
       case 'number':
       default:
         const step = tipo.decimal_places === 0 ? '1' : `0.${'0'.repeat((tipo.decimal_places || 2) - 1)}1`;
+        const currentDisplayValue = displayValues[tipo.id] !== undefined 
+          ? displayValues[tipo.id] 
+          : valor ? formatNumberForDisplay(valor) : '';
+        
         return (
           <div className="relative">
             <input
-              {...register(`medicoes.${tipo.id}`)}
-              type="number"
+              type="text"
+              inputMode="decimal"
               step={step}
+              value={currentDisplayValue}
+              onChange={(e) => handleNumberInputChange(tipo.id, e)}
               className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
                 compliance === 'compliant' 
                   ? 'border-green-300 bg-green-50' 
@@ -339,7 +367,7 @@ export const MedicoesPage: React.FC = () => {
                   ? 'border-red-300 bg-red-50'
                   : 'border-gray-300'
               }`}
-              placeholder="0"
+              placeholder="0,00"
             />
             
             {compliance && (
@@ -347,7 +375,7 @@ export const MedicoesPage: React.FC = () => {
                 {compliance === 'compliant' ? (
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                 ) : (
-                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                  <span className="text-red-600 font-medium"> - Valor fora da faixa permitida!</span>
                 )}
               </div>
             )}
@@ -723,10 +751,13 @@ export const MedicoesPage: React.FC = () => {
       
       // Reset form
       reset({
-        data_hora_medicao: new Date().toISOString().slice(0, 16),
+        data_hora_medicao: toLocalDateTimeString(),
         medicoes: {},
         photos: {},
       });
+      
+      // Clear display values
+      setDisplayValues({});
       
       // Clear photo previews
       Object.values(photoPreview).flat().forEach(url => {
@@ -881,7 +912,7 @@ export const MedicoesPage: React.FC = () => {
                     
                     {tipo.range && tipo.input_type === 'number' && (
                       <p className="text-xs text-gray-500">
-                        Faixa: {tipo.range.min} - {tipo.range.max}
+                        Faixa: {formatNumberForDisplay(tipo.range.min)} - {formatNumberForDisplay(tipo.range.max)} {tipo.unit || ''}
                         {compliance === 'non-compliant' && Number(valor) && (
                           <span className="text-red-600 font-medium"> - Fora da faixa!</span>
                         )}
