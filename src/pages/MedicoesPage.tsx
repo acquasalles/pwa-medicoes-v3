@@ -9,6 +9,14 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { PhotoService } from '../services/photoService';
 import { 
+  formatDateTime, 
+  formatValueWithUnit, 
+  toLocalDateTimeString, 
+  fromLocalDateTimeString,
+  normalizeNumberInput,
+  formatNumberForDisplay 
+} from '../utils/formatters';
+import { 
   Loader2, 
   Save, 
   AlertTriangle, 
@@ -23,6 +31,7 @@ import {
   X,
   Image as ImageIcon
 } from 'lucide-react';
+import { DatePickerField } from '../components/DatePickerField';
 
 interface LocationState {
   clienteId: number;
@@ -107,27 +116,46 @@ export const MedicoesPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState<Record<string, boolean>>({});
   const [photoPreview, setPhotoPreview] = useState<Record<string, string[]>>({});
+  const [displayValues, setDisplayValues] = useState<Record<string, string>>({});
 
   const schema = createSchema(tipos);
   
+  // Initialize default values
+  const defaultValues = {
+    data_hora_medicao: toLocalDateTimeString(),
+    medicoes: {},
+    photos: {},
+  };
+
   const {
     register,
     handleSubmit,
     setValue,
+    getValues,
     formState: { errors },
     reset,
     watch,
   } = useForm<MedicaoFormData>({
     resolver: yupResolver(schema),
-    defaultValues: {
-      data_hora_medicao: new Date().toISOString().slice(0, 16),
-      medicoes: {},
-      photos: {},
-    },
+    defaultValues,
   });
 
   const watchedValues = watch('medicoes');
   const watchedPhotos = watch('photos');
+
+  const handleNumberInputChange = (tipoId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = event.target.value;
+    const normalizedValue = normalizeNumberInput(rawValue);
+    
+    // Update display value (what user sees)
+    setDisplayValues(prev => ({
+      ...prev,
+      [tipoId]: rawValue
+    }));
+    
+    // Update form value (normalized for processing)
+    setValue(`medicoes.${tipoId}`, normalizedValue ? parseFloat(normalizedValue) : '');
+  };
 
   const handlePhotoUpload = (tipoId: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -325,12 +353,18 @@ export const MedicoesPage: React.FC = () => {
       case 'number':
       default:
         const step = tipo.decimal_places === 0 ? '1' : `0.${'0'.repeat((tipo.decimal_places || 2) - 1)}1`;
+        const currentDisplayValue = displayValues[tipo.id] !== undefined 
+          ? displayValues[tipo.id] 
+          : valor ? formatNumberForDisplay(valor) : '';
+        
         return (
           <div className="relative">
             <input
-              {...register(`medicoes.${tipo.id}`)}
-              type="number"
+              type="text"
+              inputMode="decimal"
               step={step}
+              value={currentDisplayValue}
+              onChange={(e) => handleNumberInputChange(tipo.id, e)}
               className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
                 compliance === 'compliant' 
                   ? 'border-green-300 bg-green-50' 
@@ -338,7 +372,7 @@ export const MedicoesPage: React.FC = () => {
                   ? 'border-red-300 bg-red-50'
                   : 'border-gray-300'
               }`}
-              placeholder="0"
+              placeholder="0,00"
             />
             
             {compliance && (
@@ -346,7 +380,7 @@ export const MedicoesPage: React.FC = () => {
                 {compliance === 'compliant' ? (
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                 ) : (
-                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                  <span className="text-red-600 font-medium"> - Valor fora da faixa permitida!</span>
                 )}
               </div>
             )}
@@ -627,6 +661,21 @@ export const MedicoesPage: React.FC = () => {
     setSaving(true);
     
     try {
+      // Converter data_hora_medicao de GMT-3 para UTC para o backend
+      const convertToUTC = (localDateTimeString: string): string => {
+        // A string vem no formato YYYY-MM-DDTHH:mm e representa horário GMT-3
+        // Precisamos converter para UTC para salvar no backend
+        const dateWithOffset = localDateTimeString + '-03:00';
+        const date = new Date(dateWithOffset);
+        return date.toISOString();
+      };
+      
+      const utcDateTime = convertToUTC(data.data_hora_medicao);
+      console.log('🕐 Converting datetime:', {
+        localInput: data.data_hora_medicao,
+        utcOutput: utcDateTime
+      });
+      
       // Process measurement items
       const medicaoItems = [];
       
@@ -704,7 +753,7 @@ export const MedicoesPage: React.FC = () => {
       // Add to pending (handles both online and offline scenarios)
       addPendingMedicao({
         ponto_de_coleta_id: pontoId,
-        data_hora_medicao: data.data_hora_medicao,
+        data_hora_medicao: utcDateTime,
         cliente_id: clienteId,
         area_de_trabalho_id: areaId,
         items: medicaoItems,
@@ -722,10 +771,13 @@ export const MedicoesPage: React.FC = () => {
       
       // Reset form
       reset({
-        data_hora_medicao: new Date().toISOString().slice(0, 16),
+        data_hora_medicao: toLocalDateTimeString(),
         medicoes: {},
         photos: {},
       });
+      
+      // Clear display values
+      setDisplayValues({});
       
       // Clear photo previews
       Object.values(photoPreview).flat().forEach(url => {
@@ -817,14 +869,11 @@ export const MedicoesPage: React.FC = () => {
             </div>
             
             <div className="max-w-md">
-              <input
-                {...register('data_hora_medicao')}
-                type="datetime-local"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+              <DatePickerField
+                value={watch('data_hora_medicao')}
+                onChange={(value) => setValue('data_hora_medicao', value)}
+                error={errors.data_hora_medicao?.message}
               />
-              {errors.data_hora_medicao && (
-                <p className="mt-1 text-sm text-red-600">{errors.data_hora_medicao.message}</p>
-              )}
             </div>
           </div>
 
@@ -877,7 +926,7 @@ export const MedicoesPage: React.FC = () => {
                     
                     {tipo.range && tipo.input_type === 'number' && (
                       <p className="text-xs text-gray-500">
-                        Faixa: {tipo.range.min} - {tipo.range.max}
+                       
                         {compliance === 'non-compliant' && Number(valor) && (
                           <span className="text-red-600 font-medium"> - Fora da faixa!</span>
                         )}

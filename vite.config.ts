@@ -21,13 +21,14 @@ export default defineConfig({
         description: 'PWA para cadastro de medições com funcionalidade offline',
         theme_color: '#203B8C',
         background_color: '#B6F2EC',
-        display: 'fullscreen',
-        display_override: ['window-controls-overlay', 'minimal-ui'],
+        display: 'standalone',
+        display_override: ['window-controls-overlay', 'minimal-ui', 'fullscreen'],
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
         id: '/',
         lang: 'pt-BR',
+        prefer_related_applications: false,
         icons: [
           {
             src: 'svg-icon-any.svg',
