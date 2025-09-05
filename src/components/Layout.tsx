@@ -1,5 +1,6 @@
 import React from 'react';
 import { useOfflineSync } from '../hooks/useOfflineSync';
+import { formatRelativeTime } from '../utils/formatters';
 import { Wifi, WifiOff, RefreshCw, AlertCircle, X } from 'lucide-react';
 
 interface LayoutProps {

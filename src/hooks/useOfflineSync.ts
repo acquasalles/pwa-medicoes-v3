@@ -106,7 +106,8 @@ export const useOfflineSync = () => {
         console.log('💊 Syncing medicao:', {
           cliente_id: medicao.cliente_id,
           ponto_id: medicao.ponto_de_coleta_id,
-          items_count: medicao.items.length
+          items_count: medicao.items.length,
+          data_hora: formatDateTime(medicao.data_hora_medicao)
         });
 
         // RLS policies will handle user validation automatically

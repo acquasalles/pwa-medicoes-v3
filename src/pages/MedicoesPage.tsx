@@ -826,6 +826,9 @@ export const MedicoesPage: React.FC = () => {
               {errors.data_hora_medicao && (
                 <p className="mt-1 text-sm text-red-600">{errors.data_hora_medicao.message}</p>
               )}
+              <p className="mt-1 text-xs text-gray-500">
+                Fuso horário: GMT-3 (Brasília)
+              </p>
             </div>
           </div>
 
