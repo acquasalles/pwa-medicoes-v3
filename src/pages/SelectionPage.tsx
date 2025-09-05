@@ -412,15 +412,20 @@ export const SelectionPage: React.FC = () => {
     try {
       console.log('🔍 Loading medições for today...');
       
-      const hoje = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-      const amanha = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      // Usar fuso horário brasileiro para determinar "hoje"
+      const agora = new Date();
+      const hoje = new Date(agora.getTime() - (3 * 60 * 60 * 1000)); // GMT-3
+      const amanha = new Date(hoje.getTime() + 24 * 60 * 60 * 1000);
+      
+      const hojeStr = hoje.toISOString().split('T')[0];
+      const amanhaStr = amanha.toISOString().split('T')[0];
 
       const { data, error } = await supabase
         .from('medicao')
         .select('ponto_de_coleta_id')
         .in('ponto_de_coleta_id', pontoIds)
-        .gte('data_hora_medicao', hoje)
-        .lt('data_hora_medicao', amanha);
+        .gte('data_hora_medicao', hojeStr)
+        .lt('data_hora_medicao', amanhaStr);
 
       if (error) throw error;
       

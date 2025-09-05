@@ -60,7 +60,7 @@ export const LoginPage: React.FC = () => {
         <div className="text-center">
           <div className="mx-auto rounded-xl flex items-center justify-center mb-6">
              <img 
-                  src="https://wanrdteafvqtcivcrtfy.supabase.co/storage/v1/object/public/medicao-photos/47397699000139/43771bee-b847-4f78-bd05-797f6ab19b6e_300ad69c-268b-4a5f-befc-fbaee3a110cc_0/logo%20(1).png"
+                  src="/logo.png"
                   alt="Logo"
                   className="h-10 w-auto"
                   onError={(e) => {

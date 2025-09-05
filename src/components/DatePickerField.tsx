@@ -1,0 +1,145 @@
+import React, { forwardRef } from 'react';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import { ptBR } from 'date-fns/locale';
+import { format, parse, isValid } from 'date-fns';
+import { Calendar, Clock } from 'lucide-react';
+import 'react-datepicker/dist/react-datepicker.css';
+import './DatePickerField.css';
+
+registerLocale('pt-BR', ptBR);
+
+interface DatePickerFieldProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  error?: string;
+  className?: string;
+  disabled?: boolean;
+}
+
+// Componente customizado para o input
+const CustomInput = forwardRef<HTMLInputElement, any>(({ value, onClick, onChange, placeholder, error, className, disabled }, ref) => (
+  <div className="relative">
+    <input
+      ref={ref}
+      value={value}
+      onClick={onClick}
+      onChange={onChange}
+      placeholder={placeholder}
+      readOnly
+      disabled={disabled}
+      className={`w-full px-4 py-3 pr-20 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+        error 
+          ? 'border-red-300 bg-red-50' 
+          : 'border-gray-300'
+      } ${disabled ? 'bg-gray-50 cursor-not-allowed' : 'cursor-pointer'} ${className || ''}`}
+    />
+    <div className="absolute inset-y-0 right-0 pr-3 flex items-center space-x-1 pointer-events-none">
+      <Calendar className="h-4 w-4 text-gray-400" />
+      <Clock className="h-4 w-4 text-gray-400" />
+    </div>
+  </div>
+));
+
+CustomInput.displayName = 'CustomInput';
+
+export const DatePickerField: React.FC<DatePickerFieldProps> = ({
+  value,
+  onChange,
+  placeholder = 'dd/mm/aaaa hh:mm',
+  error,
+  className,
+  disabled = false,
+}) => {
+  const parseValue = (dateString: string): Date | null => {
+    if (!dateString) return null;
+    
+    try {
+      if (dateString.includes('T')) {
+        const dateWithOffset = dateString + '-03:00';
+        const localDate = new Date(dateWithOffset);
+        return localDate;
+      }
+      
+      if (dateString.match(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/)) {
+        const parsed = parse(dateString, 'dd/MM/yyyy HH:mm', new Date());
+        return isValid(parsed) ? parsed : null;
+      }
+      
+      return null;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const formatValue = (date: Date | null): string => {
+    if (!date) return '';
+    
+    try {
+      const isoString = format(date, "yyyy-MM-dd'T'HH:mm");
+      return isoString;
+    } catch (error) {
+      return '';
+    }
+  };
+
+  const formatDisplayValue = (date: Date | null): string => {
+    if (!date) return '';
+    
+    try {
+      const displayString = format(date, 'dd/MM/yyyy HH:mm', { locale: ptBR });
+      return displayString;
+    } catch (error) {
+      return '';
+    }
+  };
+
+  const selectedDate = parseValue(value);
+  const displayValue = formatDisplayValue(selectedDate);
+
+  const handleDateChange = (date: Date | null) => {
+    const formattedValue = formatValue(date);
+    onChange(formattedValue);
+  };
+
+  const handleUseCurrentTime = () => {
+    console.log('⏰ [DatePicker] Using current Brazilian time...');
+    const currentBrTime = getCurrentBrazilianTime();
+    handleDateChange(currentBrTime);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="relative">
+        <DatePicker
+          selected={selectedDate}
+          onChange={handleDateChange}
+          showTimeSelect
+          timeFormat="HH:mm"
+          timeIntervals={15}
+          dateFormat="dd/MM/yyyy HH:mm"
+          locale="pt-BR"
+          placeholderText={placeholder}
+          disabled={disabled}
+          customInput={
+            <CustomInput 
+              error={error}
+              className={className}
+              placeholder={placeholder}
+              disabled={disabled}
+            />
+          }
+          popperClassName="date-picker-popper"
+          calendarClassName="date-picker-calendar"
+        />
+      </div>
+
+      {error && (
+        <p className="text-sm text-red-600 flex items-center">
+          <span className="mr-1">⚠️</span>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
