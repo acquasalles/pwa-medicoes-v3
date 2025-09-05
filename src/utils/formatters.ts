@@ -53,16 +53,26 @@ export const formatTime = (date: string | Date): string => {
 };
 
 /**
- * Converte data local para GMT-3 no formato datetime-local do HTML
+ * Converte data atual para formato datetime-local do HTML
  */
 export const toLocalDateTimeString = (date?: Date): string => {
   const now = date || new Date();
   
-  // Criar data no fuso GMT-3 usando o Intl
-  const gmt3Date = new Date(now.toLocaleString('en-US', { timeZone: TIMEZONE }));
+  // Formato YYYY-MM-DDTHH:mm usando os valores locais
+  return formatDateTime(now, 'yyyy-MM-dd\'T\'HH:mm');
+};
+
+/**
+ * Formatar data usando format do date-fns
+ */
+const formatDateTime = (date: Date, formatStr: string): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
   
-  // Formato YYYY-MM-DDTHH:mm para datetime-local
-  return gmt3Date.toISOString().slice(0, 16);
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
 /**

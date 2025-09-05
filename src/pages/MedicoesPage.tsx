@@ -657,6 +657,21 @@ export const MedicoesPage: React.FC = () => {
     setSaving(true);
     
     try {
+      // Converter data_hora_medicao de GMT-3 para UTC para o backend
+      const convertToUTC = (localDateTimeString: string): string => {
+        // A string vem no formato YYYY-MM-DDTHH:mm e representa horário GMT-3
+        // Precisamos converter para UTC para salvar no backend
+        const dateWithOffset = localDateTimeString + '-03:00';
+        const date = new Date(dateWithOffset);
+        return date.toISOString();
+      };
+      
+      const utcDateTime = convertToUTC(data.data_hora_medicao);
+      console.log('🕐 Converting datetime:', {
+        localInput: data.data_hora_medicao,
+        utcOutput: utcDateTime
+      });
+      
       // Process measurement items
       const medicaoItems = [];
       
@@ -734,7 +749,7 @@ export const MedicoesPage: React.FC = () => {
       // Add to pending (handles both online and offline scenarios)
       addPendingMedicao({
         ponto_de_coleta_id: pontoId,
-        data_hora_medicao: data.data_hora_medicao,
+        data_hora_medicao: utcDateTime,
         cliente_id: clienteId,
         area_de_trabalho_id: areaId,
         items: medicaoItems,

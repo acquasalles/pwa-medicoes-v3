@@ -64,24 +64,19 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     });
   };
 
-  // Converter string para Date - TRATANDO COMO HORÁRIO LOCAL (SEM CONVERSÕES)
+  // Converter string para Date - INTERPRETAR COMO GMT-3
   const parseValue = (dateString: string): Date | null => {
     logTimezone('parseValue - INPUT', dateString);
     
     if (!dateString) return null;
     
     try {
-      // Se for formato ISO (YYYY-MM-DDTHH:mm) - tratar como horário local
+      // Se for formato ISO (YYYY-MM-DDTHH:mm) - tratar como GMT-3
       if (dateString.includes('T')) {
-        // Parse direto como horário local (SEM conversões de timezone)
-        // Forçar interpretação como local usando o constructor separado
-        const [datePart, timePart] = dateString.split('T');
-        const [year, month, day] = datePart.split('-').map(Number);
-        const [hours, minutes] = timePart.split(':').map(Number);
-        
-        // Criar Date como horário local explicitamente
-        const localDate = new Date(year, month - 1, day, hours, minutes);
-        logTimezone('parseValue - ISO parsed as local', localDate);
+        // Adicionar offset GMT-3 para que seja interpretado corretamente
+        const dateWithOffset = dateString + '-03:00';
+        const localDate = new Date(dateWithOffset);
+        logTimezone('parseValue - ISO parsed as GMT-3', localDate, { dateWithOffset });
         
         return localDate;
       }
@@ -100,14 +95,14 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     }
   };
 
-  // Converter Date para string no formato ISO - MANTENDO HORÁRIO LOCAL
+  // Converter Date para string no formato ISO - EXTRAINDO HORÁRIO LOCAL
   const formatValue = (date: Date | null): string => {
     logTimezone('formatValue - INPUT', date);
     
     if (!date) return '';
     
     try {
-      // Formatar usando os valores locais da data (SEM conversões de timezone)
+      // Formatar usando os valores locais da data
       const isoString = format(date, "yyyy-MM-dd'T'HH:mm");
       
       logTimezone('formatValue - OUTPUT', date, { isoString });
@@ -119,7 +114,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     }
   };
 
-  // Formatar para exibição em pt-BR - DIRETO DOS VALORES LOCAIS
+  // Formatar para exibição em pt-BR
   const formatDisplayValue = (date: Date | null): string => {
     logTimezone('formatDisplayValue - INPUT', date);
     
@@ -137,7 +132,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     }
   };
 
-  // Obter data atual do sistema (horário local)
+  // Obter data atual do sistema
   const getCurrentBrazilianTime = (): Date => {
     const now = new Date();
     logTimezone('getCurrentBrazilianTime', now);
