@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { PhotoService } from '../services/photoService';
+import { formatDateTime, formatValueWithUnit, toLocalDateTimeString, fromLocalDateTimeString } from '../utils/formatters';
 import { 
   Loader2, 
   Save, 
@@ -120,7 +121,7 @@ export const MedicoesPage: React.FC = () => {
   } = useForm<MedicaoFormData>({
     resolver: yupResolver(schema),
     defaultValues: {
-      data_hora_medicao: new Date().toISOString().slice(0, 16),
+      data_hora_medicao: toLocalDateTimeString(),
       medicoes: {},
       photos: {},
     },
