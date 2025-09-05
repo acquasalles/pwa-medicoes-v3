@@ -107,10 +107,6 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     onChange(formattedValue);
   };
 
-  const handleUseNow = () => {
-    const now = new Date();
-    handleDateChange(now);
-  };
 
   return (
     <div className="space-y-2">
@@ -138,15 +134,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
         />
       </div>
 
-      {/* Botão para usar data/hora atual */}
-      <button
-        type="button"
-        onClick={handleUseNow}
-        disabled={disabled}
-        className="text-sm text-primary hover:text-primary-light disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
-      >
-        📅 Usar data e hora atual
-      </button>
+      
 
       {error && (
         <p className="text-sm text-red-600 flex items-center">
@@ -155,10 +143,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
         </p>
       )}
 
-      {/* Informação sobre fuso horário */}
-      <p className="text-xs text-gray-500">
-        Fuso horário: GMT-3 (Brasília) • Formato: dd/mm/aaaa hh:mm
-      </p>
+      
     </div>
   );
 };
