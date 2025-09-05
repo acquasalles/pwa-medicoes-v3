@@ -73,6 +73,8 @@ export const toLocalDateTimeString = (date?: Date): string => {
   
   return result;
 };
+
+export const fromLocalDateTimeString = (dateTimeString: string): Date => {
   const localDate = new Date(dateTimeString);
   return localDate;
 };
