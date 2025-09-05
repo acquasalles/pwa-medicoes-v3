@@ -93,7 +93,8 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     if (!date) return '';
     
     try {
-      return format(date, 'dd/MM/yyyy HH:mm', { locale: ptBR });
+      const utcDate = new Date(date.getTime() - (3 * 60 * 60 * 1000));
+      return format(utcDate, 'dd/MM/yyyy HH:mm', { locale: ptBR });
     } catch (error) {
       return '';
     }
