@@ -188,16 +188,6 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
         />
       </div>
 
-      {/* Button to use current time */}
-      <button
-        type="button"
-        onClick={handleUseCurrentTime}
-        className="text-sm text-primary hover:text-primary-light transition-colors flex items-center space-x-1"
-      >
-        <Clock className="w-3 h-3" />
-        <span>Usar data e hora atual (GMT-3)</span>
-      </button>
-
       {error && (
         <p className="text-sm text-red-600 flex items-center">
           <span className="mr-1">⚠️</span>
@@ -206,13 +196,13 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
       )}
 
       {/* Debug info in development */}
-      {process.env.NODE_ENV === 'development' && (
+      {process.env.NODE_ENV === 'development' && value && (
         <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded mt-2">
           <div><strong>Debug Info:</strong></div>
           <div>Input value: {value}</div>
           <div>Display value: {displayValue}</div>
           <div>Selected date: {selectedDate?.toString() || 'null'}</div>
-          <div>Current BR time: {getCurrentBrazilianTime().toLocaleString('pt-BR')}</div>
+          <div>Expected display: {value ? formatDisplayValue(parseValue(value)) : 'N/A'}</div>
         </div>
       )}
     </div>

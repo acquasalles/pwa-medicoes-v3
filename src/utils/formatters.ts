@@ -59,14 +59,20 @@ export const toLocalDateTimeString = (date?: Date): string => {
   const now = date || new Date();
   
   // Formato YYYY-MM-DDTHH:mm usando os valores locais
-  return formatDateTime(now, 'yyyy-MM-dd\'T\'HH:mm');
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  
+  const result = `${year}-${month}-${day}T${hours}:${minutes}`;
+  console.log('🕐 [formatters] toLocalDateTimeString:', {
+    input: now.toString(),
+    output: result
+  });
+  
+  return result;
 };
-
-/**
- * Converte string datetime-local para Date em GMT-3
- */
-export const fromLocalDateTimeString = (dateTimeString: string): Date => {
-  // Trata a string como horário local GMT-3
   const localDate = new Date(dateTimeString);
   return localDate;
 };
