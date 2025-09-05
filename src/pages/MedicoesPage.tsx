@@ -8,7 +8,6 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { PhotoService } from '../services/photoService';
-import { DateTimeInput } from '../components/DateTimeInput';
 import { 
   formatDateTime, 
   formatValueWithUnit, 
@@ -850,11 +849,17 @@ export const MedicoesPage: React.FC = () => {
             </div>
             
             <div className="max-w-md">
-              <DateTimeInput
-                value={watch('data_hora_medicao')}
-                onChange={(value) => setValue('data_hora_medicao', value)}
-                error={errors.data_hora_medicao?.message}
+              <input
+                {...register('data_hora_medicao')}
+                type="datetime-local"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
               />
+              {errors.data_hora_medicao && (
+                <p className="mt-1 text-sm text-red-600">{errors.data_hora_medicao.message}</p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Fuso horário: GMT-3 (Brasília)
+              </p>
             </div>
           </div>
 
