@@ -120,6 +120,13 @@ export const MedicoesPage: React.FC = () => {
 
   const schema = createSchema(tipos);
   
+  // Initialize default values
+  const defaultValues = {
+    data_hora_medicao: toLocalDateTimeString(),
+    medicoes: {},
+    photos: {},
+  };
+
   const {
     register,
     handleSubmit,
@@ -130,6 +137,7 @@ export const MedicoesPage: React.FC = () => {
     watch,
   } = useForm<MedicaoFormData>({
     resolver: yupResolver(schema),
+    defaultValues,
   });
 
   const watchedValues = watch('medicoes');
@@ -384,13 +392,6 @@ export const MedicoesPage: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
-
-  // Set initial datetime value after component mounts
-  useEffect(() => {
-    const currentDateTime = toLocalDateTimeString();
-    console.log('🕐 [MedicoesPage] Setting initial datetime:', currentDateTime);
-    setValue('data_hora_medicao', currentDateTime);
-  }, [setValue]);
 
   const loadData = async () => {
     setLoading(true);

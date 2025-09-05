@@ -31,31 +31,35 @@ createRoot(document.getElementById('root')!).render(
 // Register Service Worker manually
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', {
-      scope: '/',
-      type: 'classic'
-    })
-    .then((registration) => {
-      console.log('✅ PWA: Service Worker registered successfully:', registration.scope);
-      
-      // Listen for updates
-      registration.addEventListener('updatefound', () => {
-        console.log('🔄 PWA: Service Worker update found');
-        const newWorker = registration.installing;
-        if (newWorker) {
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('📱 PWA: New Service Worker installed, update available');
-              // Trigger update prompt if needed
-              window.dispatchEvent(new Event('sw-update-available'));
-            }
-          });
-        }
+    try {
+      navigator.serviceWorker.register('/sw.js', {
+        scope: '/',
+        type: 'classic'
+      })
+      .then((registration) => {
+        console.log('✅ PWA: Service Worker registered successfully:', registration.scope);
+        
+        // Listen for updates
+        registration.addEventListener('updatefound', () => {
+          console.log('🔄 PWA: Service Worker update found');
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('📱 PWA: New Service Worker installed, update available');
+                // Trigger update prompt if needed
+                window.dispatchEvent(new Event('sw-update-available'));
+              }
+            });
+          }
+        });
+      })
+      .catch((error) => {
+        console.error('❌ PWA: Service Worker registration failed:', error);
       });
-    })
-    .catch((error) => {
-      console.error('❌ PWA: Service Worker registration failed:', error);
-    });
+    } catch (error) {
+      console.error('❌ PWA: Service Worker not supported in this environment:', error);
+    }
   });
 }
 
