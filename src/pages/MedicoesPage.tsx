@@ -926,7 +926,7 @@ export const MedicoesPage: React.FC = () => {
                     
                     {tipo.range && tipo.input_type === 'number' && (
                       <p className="text-xs text-gray-500">
-                        Faixa: {formatNumberForDisplay(tipo.range.min)} - {formatNumberForDisplay(tipo.range.max)} {tipo.unit || ''}
+                       
                         {compliance === 'non-compliant' && Number(valor) && (
                           <span className="text-red-600 font-medium"> - Fora da faixa!</span>
                         )}
