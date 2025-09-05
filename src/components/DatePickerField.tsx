@@ -6,7 +6,6 @@ import { Calendar, Clock } from 'lucide-react';
 import 'react-datepicker/dist/react-datepicker.css';
 import './DatePickerField.css';
 
-// Registrar o locale pt-BR
 registerLocale('pt-BR', ptBR);
 
 interface DatePickerFieldProps {
@@ -52,107 +51,54 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
   className,
   disabled = false,
 }) => {
-  // Logging para debug de timezone
-  const logTimezone = (label: string, date: Date | string | null, extra?: any) => {
-    console.log(`🕐 [DatePicker ${label}]`, {
-      input: date,
-      type: typeof date,
-      isDate: date instanceof Date,
-      asString: date?.toString(),
-      localString: date instanceof Date ? date.toLocaleString('pt-BR') : 'N/A',
-      extra
-    });
-  };
-
-  // Converter string para Date - INTERPRETAR COMO GMT-3
   const parseValue = (dateString: string): Date | null => {
-    logTimezone('parseValue - INPUT', dateString);
-    
     if (!dateString) return null;
     
     try {
-      // Se for formato ISO (YYYY-MM-DDTHH:mm) - tratar como GMT-3
       if (dateString.includes('T')) {
-        // Adicionar offset GMT-3 para que seja interpretado corretamente
         const dateWithOffset = dateString + '-03:00';
         const localDate = new Date(dateWithOffset);
-        logTimezone('parseValue - ISO parsed as GMT-3', localDate, { dateWithOffset });
-        
         return localDate;
       }
       
-      // Se for formato brasileiro (dd/mm/yyyy hh:mm)
       if (dateString.match(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/)) {
         const parsed = parse(dateString, 'dd/MM/yyyy HH:mm', new Date());
-        logTimezone('parseValue - Brazilian format parsed', parsed);
         return isValid(parsed) ? parsed : null;
       }
       
       return null;
     } catch (error) {
-      console.error('🚨 [DatePicker parseValue ERROR]', error);
       return null;
     }
   };
 
-  // Converter Date para string no formato ISO - EXTRAINDO HORÁRIO LOCAL
   const formatValue = (date: Date | null): string => {
-    logTimezone('formatValue - INPUT', date);
-    
     if (!date) return '';
     
     try {
-      // Formatar usando os valores locais da data
       const isoString = format(date, "yyyy-MM-dd'T'HH:mm");
-      
-      logTimezone('formatValue - OUTPUT', date, { isoString });
-      
       return isoString;
     } catch (error) {
-      console.error('🚨 [DatePicker formatValue ERROR]', error);
       return '';
     }
   };
 
-  // Formatar para exibição em pt-BR
   const formatDisplayValue = (date: Date | null): string => {
-    logTimezone('formatDisplayValue - INPUT', date);
-    
     if (!date) return '';
     
     try {
       const displayString = format(date, 'dd/MM/yyyy HH:mm', { locale: ptBR });
-      
-      logTimezone('formatDisplayValue - OUTPUT', date, { displayString });
-      
       return displayString;
     } catch (error) {
-      console.error('🚨 [DatePicker formatDisplayValue ERROR]', error);
       return '';
     }
   };
 
-  // Obter data atual do sistema
-  const getCurrentBrazilianTime = (): Date => {
-    const now = new Date();
-    logTimezone('getCurrentBrazilianTime', now);
-    
-    return now;
-  };
-
   const selectedDate = parseValue(value);
   const displayValue = formatDisplayValue(selectedDate);
-  
-  logTimezone('COMPONENT STATE', selectedDate, { 
-    value, 
-    displayValue,
-    selectedDate 
-  });
 
   const handleDateChange = (date: Date | null) => {
-    logTimezone('handleDateChange - INPUT', date);
     const formattedValue = formatValue(date);
-    console.log('🔄 [DatePicker] handleDateChange calling onChange with:', formattedValue);
     onChange(formattedValue);
   };
 
@@ -193,17 +139,6 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
           <span className="mr-1">⚠️</span>
           {error}
         </p>
-      )}
-
-      {/* Debug info in development */}
-      {process.env.NODE_ENV === 'development' && value && (
-        <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded mt-2">
-          <div><strong>Debug Info:</strong></div>
-          <div>Input value: {value}</div>
-          <div>Display value: {displayValue}</div>
-          <div>Selected date: {selectedDate?.toString() || 'null'}</div>
-          <div>Expected display: {value ? formatDisplayValue(parseValue(value)) : 'N/A'}</div>
-        </div>
       )}
     </div>
   );
