@@ -64,7 +64,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     });
   };
 
-  // Converter string para Date (sem conversões de timezone)
+  // Converter string para Date - TRATANDO COMO HORÁRIO LOCAL (SEM CONVERSÕES)
   const parseValue = (dateString: string): Date | null => {
     logTimezone('parseValue - INPUT', dateString);
     
@@ -73,8 +73,14 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     try {
       // Se for formato ISO (YYYY-MM-DDTHH:mm) - tratar como horário local
       if (dateString.includes('T')) {
-        // Parse direto sem conversões de timezone
-        const localDate = new Date(dateString);
+        // Parse direto como horário local (SEM conversões de timezone)
+        // Forçar interpretação como local usando o constructor separado
+        const [datePart, timePart] = dateString.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hours, minutes] = timePart.split(':').map(Number);
+        
+        // Criar Date como horário local explicitamente
+        const localDate = new Date(year, month - 1, day, hours, minutes);
         logTimezone('parseValue - ISO parsed as local', localDate);
         
         return localDate;
@@ -94,14 +100,14 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     }
   };
 
-  // Converter Date para string no formato ISO (sem conversões de timezone)
+  // Converter Date para string no formato ISO - MANTENDO HORÁRIO LOCAL
   const formatValue = (date: Date | null): string => {
     logTimezone('formatValue - INPUT', date);
     
     if (!date) return '';
     
     try {
-      // Formatar diretamente sem conversões de timezone
+      // Formatar usando os valores locais da data (SEM conversões de timezone)
       const isoString = format(date, "yyyy-MM-dd'T'HH:mm");
       
       logTimezone('formatValue - OUTPUT', date, { isoString });
@@ -113,7 +119,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     }
   };
 
-  // Formatar para exibição em pt-BR (sem conversões de timezone)
+  // Formatar para exibição em pt-BR - DIRETO DOS VALORES LOCAIS
   const formatDisplayValue = (date: Date | null): string => {
     logTimezone('formatDisplayValue - INPUT', date);
     
@@ -131,7 +137,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     }
   };
 
-  // Obter data atual local
+  // Obter data atual do sistema (horário local)
   const getCurrentBrazilianTime = (): Date => {
     const now = new Date();
     logTimezone('getCurrentBrazilianTime', now);
