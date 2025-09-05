@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { ptBR } from 'date-fns/locale';
-import { format, parse, isValid, parseISO, formatISO } from 'date-fns';
+import { format, parse, isValid } from 'date-fns';
 import { Calendar, Clock } from 'lucide-react';
 import 'react-datepicker/dist/react-datepicker.css';
 import './DatePickerField.css';
@@ -52,40 +52,30 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
   className,
   disabled = false,
 }) => {
-  // Enhanced logging for timezone debugging
+  // Logging para debug de timezone
   const logTimezone = (label: string, date: Date | string | null, extra?: any) => {
     console.log(`🕐 [DatePicker ${label}]`, {
       input: date,
       type: typeof date,
       isDate: date instanceof Date,
       asString: date?.toString(),
-      utcString: date instanceof Date ? date.toUTCString() : 'N/A',
-      isoString: date instanceof Date ? date.toISOString() : 'N/A',
-      localString: date instanceof Date ? date.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : 'N/A',
-      timezoneOffset: date instanceof Date ? date.getTimezoneOffset() : 'N/A',
+      localString: date instanceof Date ? date.toLocaleString('pt-BR') : 'N/A',
       extra
     });
   };
 
-  // Converter string para Date
+  // Converter string para Date (sem conversões de timezone)
   const parseValue = (dateString: string): Date | null => {
     logTimezone('parseValue - INPUT', dateString);
     
     if (!dateString) return null;
     
     try {
-      // Se for formato ISO (YYYY-MM-DDTHH:mm) - vindo do backend/form
+      // Se for formato ISO (YYYY-MM-DDTHH:mm) - tratar como horário local
       if (dateString.includes('T')) {
-        // Parse como ISO e ajustar para GMT-3
-        const isoDate = parseISO(dateString);
-        logTimezone('parseValue - ISO parsed', isoDate);
-        
-        if (!isValid(isoDate)) return null;
-        
-        // Criar data local considerando GMT-3
-        // Se a string não tem timezone, assumir que é GMT-3 local
-        const localDate = new Date(isoDate.getTime() + (3 * 60 * 60 * 1000));
-        logTimezone('parseValue - ISO adjusted for GMT-3', localDate);
+        // Parse direto sem conversões de timezone
+        const localDate = new Date(dateString);
+        logTimezone('parseValue - ISO parsed as local', localDate);
         
         return localDate;
       }
@@ -104,19 +94,17 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     }
   };
 
-  // Converter Date para string no formato ISO para o backend (GMT-3)
+  // Converter Date para string no formato ISO (sem conversões de timezone)
   const formatValue = (date: Date | null): string => {
     logTimezone('formatValue - INPUT', date);
     
     if (!date) return '';
     
     try {
-      // Ajustar para GMT-3 (fuso de Brasília)
-      // date já está em horário local do usuário, precisamos converter para GMT-3
-      const gmt3Date = new Date(date.getTime() - (3 * 60 * 60 * 1000));
-      const isoString = format(gmt3Date, "yyyy-MM-dd'T'HH:mm");
+      // Formatar diretamente sem conversões de timezone
+      const isoString = format(date, "yyyy-MM-dd'T'HH:mm");
       
-      logTimezone('formatValue - OUTPUT', gmt3Date, { isoString });
+      logTimezone('formatValue - OUTPUT', date, { isoString });
       
       return isoString;
     } catch (error) {
@@ -125,14 +113,13 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     }
   };
 
-  // Formatar para exibição em pt-BR
+  // Formatar para exibição em pt-BR (sem conversões de timezone)
   const formatDisplayValue = (date: Date | null): string => {
     logTimezone('formatDisplayValue - INPUT', date);
     
     if (!date) return '';
     
     try {
-      // Formatar diretamente para pt-BR usando o horário local
       const displayString = format(date, 'dd/MM/yyyy HH:mm', { locale: ptBR });
       
       logTimezone('formatDisplayValue - OUTPUT', date, { displayString });
@@ -144,19 +131,12 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     }
   };
 
-  // Obter data atual em GMT-3
+  // Obter data atual local
   const getCurrentBrazilianTime = (): Date => {
     const now = new Date();
+    logTimezone('getCurrentBrazilianTime', now);
     
-    // Criar data atual considerando GMT-3
-    const brTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-    
-    logTimezone('getCurrentBrazilianTime', brTime, { 
-      originalNow: now,
-      timezoneUsed: 'America/Sao_Paulo'
-    });
-    
-    return brTime;
+    return now;
   };
 
   const selectedDate = parseValue(value);
