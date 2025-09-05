@@ -31,6 +31,7 @@ import {
   X,
   Image as ImageIcon
 } from 'lucide-react';
+import { DatePickerField } from '../components/DatePickerField';
 
 interface LocationState {
   clienteId: number;
@@ -849,17 +850,11 @@ export const MedicoesPage: React.FC = () => {
             </div>
             
             <div className="max-w-md">
-              <input
-                {...register('data_hora_medicao')}
-                type="datetime-local"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+              <DatePickerField
+                value={watch('data_hora_medicao')}
+                onChange={(value) => setValue('data_hora_medicao', value)}
+                error={errors.data_hora_medicao?.message}
               />
-              {errors.data_hora_medicao && (
-                <p className="mt-1 text-sm text-red-600">{errors.data_hora_medicao.message}</p>
-              )}
-              <p className="mt-1 text-xs text-gray-500">
-                Fuso horário: GMT-3 (Brasília)
-              </p>
             </div>
           </div>
 
