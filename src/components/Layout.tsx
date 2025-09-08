@@ -1,6 +1,7 @@
 import React from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { useOfflineSync } from '../hooks/useOfflineSync';
-import { Wifi, WifiOff, RefreshCw, AlertCircle, X } from 'lucide-react';
+import { Wifi, WifiOff, RefreshCw, AlertCircle, X, LogOut } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,6 +16,7 @@ export const Layout: React.FC<LayoutProps> = ({
   showBackButton = false, 
   onBack 
 }) => {
+  const { signOut } = useAuth();
   const { 
     hasPendingData, 
     syncing, 
@@ -91,6 +93,16 @@ export const Layout: React.FC<LayoutProps> = ({
                   )}
                 </div>
               )}
+
+              {/* Logout Button */}
+              <button
+                onClick={signOut}
+                className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+                title="Sair do sistema"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="text-sm font-medium">Sair</span>
+              </button>
             </div>
           </div>
         </div>
