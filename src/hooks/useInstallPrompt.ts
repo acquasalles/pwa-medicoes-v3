@@ -25,7 +25,7 @@ interface InstallPromptState {
 export const useInstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(() => checkIfInstalled());
   const [beforeInstallPromptFired, setBeforeInstallPromptFired] = useState(false);
 
   // Device detection
@@ -61,17 +61,14 @@ export const useInstallPrompt = () => {
     }
   }, [isFirstVisit]);
 
-  const installed = checkIfInstalled();
-  setIsInstalled(installed);
-
-  const showManualInstructions = isMobile && !installed && !isInstallable;
-  const shouldShowPrompt = !hasSeenPrompt && !installed && (isInstallable || showManualInstructions);
+  const showManualInstructions = isMobile && !isInstalled && !isInstallable;
+  const shouldShowPrompt = !hasSeenPrompt && !isInstalled && (isInstallable || showManualInstructions);
 
   // Log debug information
   console.log('📋 PWA: Manual instructions available for mobile device');
   console.log('🔍 PWA shouldShowPrompt debug:', {
     hasSeenPrompt,
-    isInstalled: installed,
+    isInstalled,
     isFirstVisit,
     isInstallable,
     showManualInstructions,
@@ -198,7 +195,7 @@ export const useInstallPrompt = () => {
 
   const state: InstallPromptState = {
     isInstallable,
-    isInstalled: installed,
+    isInstalled,
     showManualInstructions,
     shouldShowPrompt,
     isIOS,
