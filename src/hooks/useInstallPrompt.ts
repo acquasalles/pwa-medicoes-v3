@@ -50,6 +50,7 @@ export const useInstallPrompt = () => {
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(() => checkIfInstalled());
   const [beforeInstallPromptFired, setBeforeInstallPromptFired] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
 
   // Prompt dismissal counter logic
   const [dismissCount, setDismissCount] = useState(() => {
@@ -70,7 +71,7 @@ export const useInstallPrompt = () => {
   }, [isFirstVisit]);
 
   const showManualInstructions = !isInstalled && !isInstallable;
-  const shouldShowPrompt = !isInstalled && (isInstallable || showManualInstructions) && (isFirstVisit || dismissCount < 3);
+  const shouldShowPrompt = isVisible && !isInstalled && (isInstallable || showManualInstructions) && (isFirstVisit || dismissCount < 3);
 
   // Log debug information
   console.log('📋 PWA: Manual instructions available for mobile device');
@@ -185,6 +186,7 @@ export const useInstallPrompt = () => {
       
       if (outcome === 'accepted') {
         console.log('✅ PWA: User accepted the install prompt');
+        setIsVisible(false);
       } else {
         console.log('❌ PWA: User dismissed the install prompt');
       }
@@ -197,6 +199,9 @@ export const useInstallPrompt = () => {
   }, [deferredPrompt]);
 
   const dismissPrompt = useCallback(() => {
+    // Imediatamente ocultar o prompt
+    setIsVisible(false);
+    
     const newCount = dismissCount + 1;
     setDismissCount(newCount);
     try {
