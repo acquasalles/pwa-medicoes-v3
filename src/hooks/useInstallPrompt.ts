@@ -69,7 +69,7 @@ export const useInstallPrompt = () => {
     }
   }, [isFirstVisit]);
 
-  const showManualInstructions = isMobile && !isInstalled && !isInstallable;
+  const showManualInstructions = !isInstalled && !isInstallable;
   const shouldShowPrompt = !isInstalled && (isInstallable || showManualInstructions) && (isFirstVisit || dismissCount < 3);
 
   // Log debug information
