@@ -23,11 +23,6 @@ interface InstallPromptState {
 }
 
 export const useInstallPrompt = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(() => checkIfInstalled());
-  const [beforeInstallPromptFired, setBeforeInstallPromptFired] = useState(false);
-
   // Device detection
   const userAgent = navigator.userAgent.toLowerCase();
   const isIOS = /iphone|ipad|ipod/.test(userAgent);
@@ -50,6 +45,11 @@ export const useInstallPrompt = () => {
     
     return installed;
   }, [isIOS]);
+
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(() => checkIfInstalled());
+  const [beforeInstallPromptFired, setBeforeInstallPromptFired] = useState(false);
 
   // Prompt visibility logic
   const hasSeenPrompt = localStorage.getItem('pwa-prompt-seen') === 'true';
