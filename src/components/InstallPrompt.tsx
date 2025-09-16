@@ -30,10 +30,6 @@ export const InstallPrompt: React.FC = () => {
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
           aria-label="Fechar"
         >
-          onClick={() => {
-            console.log('🔴 [InstallPrompt] X button clicked');
-            dismissPrompt();
-          }}
           <X size={24} />
         </button>
 
@@ -92,20 +88,12 @@ export const InstallPrompt: React.FC = () => {
               onClick={installApp}
               className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
             >
-              onClick={() => {
-                console.log('🚀 [InstallPrompt] Install button clicked');
-                installApp();
-              }}
               Instalar Agora
             </button>
             <button
               onClick={dismissPrompt}
               className="w-full text-gray-500 font-medium py-2 hover:text-gray-700 transition-colors"
             >
-              onClick={() => {
-                console.log('❌ [InstallPrompt] Not now button clicked');
-                dismissPrompt();
-              }}
               Agora não
             </button>
           </div>
@@ -143,10 +131,6 @@ export const InstallPrompt: React.FC = () => {
               onClick={dismissPrompt}
               className="w-full text-gray-500 font-medium py-2 hover:text-gray-700 transition-colors"
             >
-              onClick={() => {
-                console.log('✅ [InstallPrompt] Got it button clicked');
-                dismissPrompt();
-              }}
               Entendi, obrigado
             </button>
           </div>
@@ -155,10 +139,6 @@ export const InstallPrompt: React.FC = () => {
             onClick={dismissPrompt}
             className="w-full bg-gray-200 text-gray-700 font-medium py-3 px-6 rounded-xl hover:bg-gray-300 transition-colors"
           >
-            onClick={() => {
-              console.log('🔒 [InstallPrompt] Close button clicked');
-              dismissPrompt();
-            }}
             Fechar
           </button>
         )}

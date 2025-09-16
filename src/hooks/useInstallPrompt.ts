@@ -173,6 +173,7 @@ export const useInstallPrompt = () => {
   }, [beforeInstallPromptFired]);
 
   const installApp = useCallback(async () => {
+    console.log('🚀 [useInstallPrompt] installApp function called');
     if (!deferredPrompt) {
       console.log('❌ PWA: No deferred prompt available');
       return;
@@ -199,6 +200,7 @@ export const useInstallPrompt = () => {
   }, [deferredPrompt]);
 
   const dismissPrompt = useCallback(() => {
+    console.log('❌ [useInstallPrompt] dismissPrompt function called');
     // Imediatamente ocultar o prompt
     setIsVisible(false);
     
