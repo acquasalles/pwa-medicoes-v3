@@ -118,6 +118,7 @@ export const useInstallPrompt = () => {
       setDeferredPrompt(event);
       setIsInstallable(true);
       setBeforeInstallPromptFired(true);
+      setIsVisible(true); // Reset visibility when new install prompt is available
       
       console.log('📋 PWA: Install prompt available', {
         platforms: event.platforms,
@@ -129,6 +130,7 @@ export const useInstallPrompt = () => {
       console.log('✅ PWA: App was installed');
       setIsInstalled(true);
       setIsInstallable(false);
+      setIsVisible(false); // Hide prompt when app is installed
       setDeferredPrompt(null);
     };
 
@@ -190,6 +192,7 @@ export const useInstallPrompt = () => {
         setIsVisible(false);
       } else {
         console.log('❌ PWA: User dismissed the install prompt');
+        setIsVisible(false); // Hide prompt even if user dismissed the native prompt
       }
       
       setDeferredPrompt(null);
