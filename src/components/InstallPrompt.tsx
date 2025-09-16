@@ -8,7 +8,7 @@ export const InstallPrompt: React.FC = () => {
     showManualInstructions,
     shouldShowPrompt,
     isFirstVisit,
-    handleInstallClick,
+    installApp,
     dismissPrompt,
   } = useInstallPrompt();
 
@@ -85,7 +85,7 @@ export const InstallPrompt: React.FC = () => {
         {isInstallable ? (
           <div className="space-y-3">
             <button
-              onClick={handleInstallClick}
+              onClick={installApp}
               className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
             >
               Instalar Agora

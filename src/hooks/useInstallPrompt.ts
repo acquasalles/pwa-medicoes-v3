@@ -50,9 +50,18 @@ export const useInstallPrompt = () => {
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(() => checkIfInstalled());
   const [beforeInstallPromptFired, setBeforeInstallPromptFired] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
 
-  // Prompt visibility logic
-  const hasSeenPrompt = localStorage.getItem('pwa-prompt-seen') === 'true';
+  // Prompt dismissal counter logic
+  const [dismissCount, setDismissCount] = useState(() => {
+    try {
+      const stored = localStorage.getItem('pwa-dismiss-count');
+      return stored ? parseInt(stored, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
+  
   const isFirstVisit = !localStorage.getItem('pwa-first-visit');
   
   useEffect(() => {
@@ -61,13 +70,13 @@ export const useInstallPrompt = () => {
     }
   }, [isFirstVisit]);
 
-  const showManualInstructions = isMobile && !isInstalled && !isInstallable;
-  const shouldShowPrompt = !hasSeenPrompt && !isInstalled && (isInstallable || showManualInstructions);
+  const showManualInstructions = !isInstalled && !isInstallable;
+  const shouldShowPrompt = isVisible && !isInstalled && (isInstallable || showManualInstructions) && (isFirstVisit || dismissCount < 3);
 
   // Log debug information
   console.log('📋 PWA: Manual instructions available for mobile device');
   console.log('🔍 PWA shouldShowPrompt debug:', {
-    hasSeenPrompt,
+    dismissCount,
     isInstalled,
     isFirstVisit,
     isInstallable,
@@ -164,6 +173,7 @@ export const useInstallPrompt = () => {
   }, [beforeInstallPromptFired]);
 
   const installApp = useCallback(async () => {
+    console.log('🚀 [useInstallPrompt] installApp function called');
     if (!deferredPrompt) {
       console.log('❌ PWA: No deferred prompt available');
       return;
@@ -177,6 +187,7 @@ export const useInstallPrompt = () => {
       
       if (outcome === 'accepted') {
         console.log('✅ PWA: User accepted the install prompt');
+        setIsVisible(false);
       } else {
         console.log('❌ PWA: User dismissed the install prompt');
       }
@@ -189,9 +200,19 @@ export const useInstallPrompt = () => {
   }, [deferredPrompt]);
 
   const dismissPrompt = useCallback(() => {
-    localStorage.setItem('pwa-prompt-seen', 'true');
-    console.log('📋 PWA: Prompt dismissed by user');
-  }, []);
+    console.log('❌ [useInstallPrompt] dismissPrompt function called');
+    // Imediatamente ocultar o prompt
+    setIsVisible(false);
+    
+    const newCount = dismissCount + 1;
+    setDismissCount(newCount);
+    try {
+      localStorage.setItem('pwa-dismiss-count', newCount.toString());
+    } catch (error) {
+      console.error('Failed to save dismiss count:', error);
+    }
+    console.log('📋 PWA: Prompt dismissed by user, count:', newCount);
+  }, [dismissCount]);
 
   const state: InstallPromptState = {
     isInstallable,
@@ -201,7 +222,7 @@ export const useInstallPrompt = () => {
     isIOS,
     isAndroid,
     isMobile,
-    hasSeenPrompt,
+    hasSeenPrompt: dismissCount >= 3,
     isFirstVisit,
     beforeInstallPromptFired
   };
