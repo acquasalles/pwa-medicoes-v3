@@ -123,6 +123,7 @@ export const useInstallPrompt = () => {
     
     return isReady;
   }, []);
+  
   useEffect(() => {
     // Check PWA technical readiness and set state
     const isReady = checkPWATechnicalReadiness();
@@ -188,7 +189,6 @@ export const useInstallPrompt = () => {
         clearTimeout(timeoutId);
       }
     };
-  }, [beforeInstallPromptFired]);
   }, [beforeInstallPromptFired, checkPWATechnicalReadiness]);
 
   const installApp = useCallback(async () => {
