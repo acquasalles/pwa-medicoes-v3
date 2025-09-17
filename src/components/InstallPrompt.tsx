@@ -13,6 +13,10 @@ export const InstallPrompt: React.FC = () => {
   } = useInstallPrompt();
 
   console.log('🎨 InstallPrompt render:', { shouldShowPrompt, isInstallable, showManualInstructions, isFirstVisit });
+  
+  // Debug: Force show prompt for testing
+  const forceShow = true; // Set to false after testing
+  
   if (!shouldShowPrompt) {
     console.log('❌ InstallPrompt: Not rendering - shouldShowPrompt is false');
     return null;
@@ -22,9 +26,36 @@ export const InstallPrompt: React.FC = () => {
   const isAndroid = /Android/.test(navigator.userAgent);
 
   console.log('✅ InstallPrompt: Rendering prompt', { isIOS, isAndroid, isInstallable, showManualInstructions });
+  
+  // Debug: Log if component is actually being returned
+  console.log('🎯 InstallPrompt: About to return JSX component');
+  
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50 install-prompt animate-slide-up">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-end install-prompt animate-slide-up"
+      style={{ 
+        zIndex: 99999,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(255, 0, 0, 0.8)', // Red background for debugging
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center'
+      }}
+    >
       <div className="bg-white rounded-t-3xl p-6 w-full max-w-md mx-auto animate-slide-up shadow-2xl">
+        <div className="bg-yellow-200 p-2 mb-4 rounded">
+          <strong>DEBUG: InstallPrompt is visible!</strong>
+          <br />isInstallable: {isInstallable.toString()}
+          <br />showManualInstructions: {showManualInstructions.toString()}
+          <br />isFirstVisit: {isFirstVisit.toString()}
+          <br />isIOS: {isIOS.toString()}
+          <br />isAndroid: {isAndroid.toString()}
+        </div>
+        
         <button
           onClick={dismissPrompt}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
