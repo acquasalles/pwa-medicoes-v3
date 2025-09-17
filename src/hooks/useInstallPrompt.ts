@@ -20,6 +20,7 @@ interface InstallPromptState {
   hasSeenPrompt: boolean;
   isFirstVisit: boolean;
   beforeInstallPromptFired: boolean;
+  isPWATechnicallyReady: boolean;
 }
 
 export const useInstallPrompt = () => {
@@ -51,6 +52,7 @@ export const useInstallPrompt = () => {
   const [isInstalled, setIsInstalled] = useState(() => checkIfInstalled());
   const [beforeInstallPromptFired, setBeforeInstallPromptFired] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [isPWATechnicallyReady, setIsPWATechnicallyReady] = useState(false);
 
   // Prompt dismissal counter logic
   const [dismissCount, setDismissCount] = useState(() => {
@@ -103,22 +105,29 @@ export const useInstallPrompt = () => {
     isVisible
   });
 
+  // Check PWA technical readiness
+  const checkPWATechnicalReadiness = useCallback(() => {
+    const isHTTPS = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+    const hasServiceWorker = 'serviceWorker' in navigator;
+    const hasManifest = document.querySelector('link[rel="manifest"]') !== null;
+    
+    const isReady = isHTTPS && hasServiceWorker && hasManifest;
+    
+    console.log('🔧 PWA Technical Readiness Check:', {
+      isHTTPS,
+      hasServiceWorker,
+      hasManifest,
+      isReady,
+      url: window.location.href
+    });
+    
+    return isReady;
+  }, []);
   useEffect(() => {
-    // Check PWA criteria
-    const checkPWACriteria = () => {
-      const isHTTPS = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
-      const hasServiceWorker = 'serviceWorker' in navigator;
-      const hasManifest = document.querySelector('link[rel="manifest"]') !== null;
-      
-      console.log('🔧 PWA Criteria Check:', {
-        isHTTPS,
-        hasServiceWorker,
-        hasManifest,
-        url: window.location.href
-      });
-    };
+    // Check PWA technical readiness and set state
+    const isReady = checkPWATechnicalReadiness();
+    setIsPWATechnicallyReady(isReady);
 
-    checkPWACriteria();
 
     const handleBeforeInstallPrompt = (e: Event) => {
       console.log('🚀 PWA: beforeinstallprompt event fired!');
@@ -180,6 +189,7 @@ export const useInstallPrompt = () => {
       }
     };
   }, [beforeInstallPromptFired]);
+  }, [beforeInstallPromptFired, checkPWATechnicalReadiness]);
 
   const installApp = useCallback(async () => {
     console.log('🚀 [useInstallPrompt] installApp function called');
@@ -233,7 +243,8 @@ export const useInstallPrompt = () => {
     isMobile,
     hasSeenPrompt: dismissCount >= 3,
     isFirstVisit,
-    beforeInstallPromptFired
+    beforeInstallPromptFired,
+    isPWATechnicallyReady
   };
 
   console.log('🎨 InstallPrompt render:', {
@@ -246,7 +257,8 @@ export const useInstallPrompt = () => {
     isIOS,
     isAndroid,
     isInstallable,
-    showManualInstructions
+    showManualInstructions,
+    isPWATechnicallyReady
   });
 
   return {

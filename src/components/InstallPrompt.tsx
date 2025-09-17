@@ -8,11 +8,21 @@ export const InstallPrompt: React.FC = () => {
     showManualInstructions,
     shouldShowPrompt,
     isFirstVisit,
+    isPWATechnicallyReady,
+    isMobile,
     installApp,
     dismissPrompt,
   } = useInstallPrompt();
 
-  console.log('🎨 InstallPrompt render:', { shouldShowPrompt, isInstallable, showManualInstructions, isFirstVisit });
+  console.log('🎨 InstallPrompt render:', { 
+    shouldShowPrompt, 
+    isInstallable, 
+    showManualInstructions, 
+    isFirstVisit,
+    isPWATechnicallyReady,
+    isMobile 
+  });
+  
   if (!shouldShowPrompt) {
     console.log('❌ InstallPrompt: Not rendering - shouldShowPrompt is false');
     return null;
@@ -21,7 +31,7 @@ export const InstallPrompt: React.FC = () => {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isAndroid = /Android/.test(navigator.userAgent);
 
-  console.log('✅ InstallPrompt: Rendering prompt', { isIOS, isAndroid, isInstallable, showManualInstructions });
+  console.log('✅ InstallPrompt: Rendering prompt', { isIOS, isAndroid, isInstallable, showManualInstructions, isPWATechnicallyReady });
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50 install-prompt animate-slide-up">
       <div className="bg-white rounded-t-3xl p-6 w-full max-w-md mx-auto animate-slide-up shadow-2xl">
@@ -96,6 +106,43 @@ export const InstallPrompt: React.FC = () => {
             >
               Agora não
             </button>
+          </div>
+        ) : isPWATechnicallyReady && isMobile ? (
+          <div className="space-y-4">
+            <button
+              onClick={dismissPrompt}
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
+            >
+              Instalar App
+            </button>
+            <div className="bg-gray-50 rounded-xl p-4 text-sm">
+              {isIOS ? (
+                <div>
+                  <p className="font-medium text-gray-800 mb-2">Para instalar no iOS:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-gray-600">
+                    <li>Toque no ícone de compartilhar (□↗) no Safari</li>
+                    <li>Role para baixo e toque em "Adicionar à Tela Inicial"</li>
+                    <li>Toque em "Adicionar" no canto superior direito</li>
+                  </ol>
+                </div>
+              ) : isAndroid ? (
+                <div>
+                  <p className="font-medium text-gray-800 mb-2">Para instalar no Android:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-gray-600">
+                    <li>Toque no menu (⋮) do navegador</li>
+                    <li>Toque em "Adicionar à tela inicial" ou "Instalar app"</li>
+                    <li>Confirme tocando em "Adicionar" ou "Instalar"</li>
+                  </ol>
+                </div>
+              ) : (
+                <div>
+                  <p className="font-medium text-gray-800 mb-2">Para instalar:</p>
+                  <p className="text-gray-600">
+                    Use o menu do seu navegador e procure por "Adicionar à tela inicial" ou "Instalar app"
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         ) : showManualInstructions ? (
           <div className="space-y-4">
