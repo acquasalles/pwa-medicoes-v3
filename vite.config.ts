@@ -84,6 +84,10 @@ export default defineConfig({
       }
     })
   ],
+  server: {
+    // Configurar fallback para SPA routing durante desenvolvimento
+    historyApiFallback: true,
+  },
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
