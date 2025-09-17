@@ -71,7 +71,11 @@ export const useInstallPrompt = () => {
   }, [isFirstVisit]);
 
   const showManualInstructions = !isInstalled && !isInstallable;
-  const shouldShowPrompt = isVisible && !isInstalled && (isInstallable || showManualInstructions) && (isFirstVisit || dismissCount < 3);
+  
+  // On mobile, be more permissive - show prompt even if beforeinstallprompt didn't fire
+  const shouldShowPromptMobile = isMobile && !isInstalled && (isFirstVisit || dismissCount < 3);
+  const shouldShowPromptDesktop = !isInstalled && (isInstallable || showManualInstructions) && (isFirstVisit || dismissCount < 3);
+  const shouldShowPrompt = isVisible && (shouldShowPromptMobile || shouldShowPromptDesktop);
 
   // Log debug information
   console.log('📋 PWA: Manual instructions available for mobile device');
@@ -81,7 +85,10 @@ export const useInstallPrompt = () => {
     isFirstVisit,
     isInstallable,
     showManualInstructions,
-    beforeInstallPromptFired
+    beforeInstallPromptFired,
+    isMobile,
+    shouldShowPromptMobile,
+    shouldShowPromptDesktop
   });
   console.log('📱 PWA: Mobile detection:', {
     isMobile,
@@ -91,7 +98,9 @@ export const useInstallPrompt = () => {
     shouldShow: shouldShowPrompt,
     isFirstVisit,
     isInstallable,
-    showManualInstructions
+    showManualInstructions,
+    isMobile,
+    isVisible
   });
 
   useEffect(() => {
