@@ -253,9 +253,6 @@ export const useOfflineSync = () => {
                 }
 
                 console.log('✅ Photo medicao item created:', photoItemData.id);
-              } else {
-                console.error('❌ No photoItem found for tipo_medicao_id:', photo.tipo_medicao_id);
-              }
 
                 // Upload the photo
                 const uploadResult = await PhotoService.uploadPhoto(
@@ -279,6 +276,8 @@ export const useOfflineSync = () => {
                 } else {
                   console.error('❌ Photo upload failed:', uploadResult.error);
                 }
+              } else {
+                console.error('❌ No photoItem found for tipo_medicao_id:', photo.tipo_medicao_id);
               }
             } catch (photoError) {
               console.error('❌ Error processing photo:', {
