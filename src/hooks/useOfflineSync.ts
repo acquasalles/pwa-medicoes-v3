@@ -143,6 +143,16 @@ export const useOfflineSync = () => {
         
         console.log('✅ Medicao inserted:', medicaoData.id);
 
+        // Debug: Verificar dados salvos no banco
+        if (process.env.NODE_ENV === 'development') {
+          // Import dynamic to avoid bundling in production
+          import('../utils/debugHelpers').then(({ verifyDatabaseData }) => {
+            setTimeout(() => {
+              verifyDatabaseData(medicaoData.id);
+            }, 1000);
+          });
+        }
+
         // Separate photo items from regular items
         const regularItems = medicao.items.filter(item => !item.image?.startsWith('pending_upload_'));
         const photoItems = medicao.items.filter(item => item.image?.startsWith('pending_upload_'));
