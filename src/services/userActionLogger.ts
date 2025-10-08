@@ -275,11 +275,19 @@ class UserActionLogger {
   }
 
   private async insertLog(logData: LogData): Promise<void> {
+    console.log('📝 [UserActionLogger] insertLog called:', {
+      isEnabled: this.isEnabled,
+      isCircuitBreakerOpen: this.isCircuitBreakerOpen,
+      actionType: logData.action_type,
+    });
+
     if (!this.isEnabled) {
+      console.warn('⚠️ [UserActionLogger] Logging is disabled');
       return;
     }
 
     if (this.isCircuitBreakerOpen) {
+      console.warn('⚠️ [UserActionLogger] Circuit breaker is open, queuing log');
       this.localQueue.push(logData);
       return;
     }
@@ -318,13 +326,21 @@ class UserActionLogger {
         is_critical_type: isCritical,
       };
 
+      console.log('📤 [UserActionLogger] Inserting log entry:', {
+        user_id: logEntry.user_id,
+        user_email: logEntry.user_email,
+        action_type: logEntry.action_type,
+        tipo_medicao_nome: logEntry.tipo_medicao_nome,
+      });
+
       const { error } = await supabase.from('user_action_logs').insert(logEntry);
 
       if (error) {
+        console.error('❌ [UserActionLogger] Insert failed:', error);
         this.failureCount++;
         if (this.failureCount >= this.maxFailures) {
           this.isCircuitBreakerOpen = true;
-          console.warn('User action logging circuit breaker opened due to multiple failures');
+          console.warn('⚠️ [UserActionLogger] Circuit breaker opened due to multiple failures');
           setTimeout(() => {
             this.isCircuitBreakerOpen = false;
             this.failureCount = 0;
@@ -334,9 +350,10 @@ class UserActionLogger {
         throw error;
       }
 
+      console.log('✅ [UserActionLogger] Log inserted successfully');
       this.failureCount = 0;
     } catch (error) {
-      console.error('Failed to insert user action log:', error);
+      console.error('❌ [UserActionLogger] Failed to insert user action log:', error);
       this.localQueue.push(logData);
     }
   }
@@ -359,6 +376,8 @@ class UserActionLogger {
     formData: any;
     tipos: any[];
   }): Promise<void> {
+    console.log('🎯 [UserActionLogger] logMedicaoAttempt called');
+
     const actionData = {
       form_data: data.formData,
       tipos_count: data.tipos.length,
@@ -390,6 +409,8 @@ class UserActionLogger {
     final_value: any;
     validation_result?: any;
   }): Promise<void> {
+    console.log('🎯 [UserActionLogger] logCriticalMedicaoType called:', data.tipo_medicao_nome);
+
     const actionData = {
       tipo_metadata: data.tipo_metadata,
       validation_result: data.validation_result,
