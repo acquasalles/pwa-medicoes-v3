@@ -7,6 +7,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
+  isAdmin: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -95,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     console.log('👋 Signing out...');
-    
+
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
@@ -108,6 +109,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const isAdmin = (): boolean => {
+    if (!user) return false;
+    return user.user_metadata?.is_admin === true || user.app_metadata?.is_admin === true;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -115,6 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         signIn,
         signOut,
+        isAdmin,
       }}
     >
       {children}

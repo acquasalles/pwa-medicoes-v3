@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { PhotoService } from '../services/photoService';
+import { userActionLogger } from '../services/userActionLogger';
 import { formatDateTime } from '../utils/formatters';
 
 interface PendingMedicao {
@@ -100,6 +101,15 @@ export const useOfflineSync = () => {
 
     console.log('🔄 Starting sync process...');
 
+    try {
+      await userActionLogger.logSyncAttempt({
+        medicoes_count: pendingMedicoes.length,
+        pending_medicoes: pendingMedicoes,
+      });
+    } catch (logError) {
+      console.error('Error logging sync attempt:', logError);
+    }
+
     for (const medicao of pendingMedicoes) {
       try {
 
@@ -162,9 +172,42 @@ export const useOfflineSync = () => {
           if (regularItemsError) {
             console.error('❌ Regular medicao items insert error:', regularItemsError);
             setLastSyncError(`Erro ao inserir itens da medição: ${regularItemsError.message}`);
+
+            for (const item of regularItemsToInsert) {
+              try {
+                await userActionLogger.logSyncItemInsert({
+                  cliente_id: medicao.cliente_id,
+                  area_de_trabalho_id: medicao.area_de_trabalho_id,
+                  ponto_de_coleta_id: medicao.ponto_de_coleta_id,
+                  medicao_id: medicaoData.id,
+                  item: item,
+                  success: false,
+                  error: regularItemsError,
+                });
+              } catch (logError) {
+                console.error('Error logging item insert failure:', logError);
+              }
+            }
+
             throw regularItemsError;
           }
+
           console.log('✅ Regular medicao items inserted:', regularItemsToInsert.length, 'items');
+
+          for (const item of regularItemsToInsert) {
+            try {
+              await userActionLogger.logSyncItemInsert({
+                cliente_id: medicao.cliente_id,
+                area_de_trabalho_id: medicao.area_de_trabalho_id,
+                ponto_de_coleta_id: medicao.ponto_de_coleta_id,
+                medicao_id: medicaoData.id,
+                item: item,
+                success: true,
+              });
+            } catch (logError) {
+              console.error('Error logging item insert success:', logError);
+            }
+          }
         }
         
         // Handle photo uploads and create photo medicao items
@@ -213,7 +256,6 @@ export const useOfflineSync = () => {
                 );
 
                 if (uploadResult.success) {
-                  // Update the medicao_item with the photo URL
                   const { error: updateError } = await supabase
                     .from('medicao_items')
                     .update({ image: uploadResult.photo_url })
@@ -221,16 +263,75 @@ export const useOfflineSync = () => {
 
                   if (updateError) {
                     console.error('❌ Error updating medicao item with photo URL:', updateError);
+
+                    try {
+                      await userActionLogger.logPhotoUpload({
+                        cliente_id: medicao.cliente_id,
+                        area_de_trabalho_id: medicao.area_de_trabalho_id,
+                        ponto_de_coleta_id: medicao.ponto_de_coleta_id,
+                        medicao_id: medicaoData.id,
+                        tipo_medicao_id: photo.tipo_medicao_id,
+                        tipo_medicao_nome: photoItem.tipo_medicao_nome || '',
+                        photo_info: {
+                          file_name: photo.file_name,
+                          file_type: photo.file_type,
+                          file_size: file.size,
+                        },
+                        success: false,
+                        error: updateError,
+                      });
+                    } catch (logError) {
+                      console.error('Error logging photo upload failure:', logError);
+                    }
                   } else {
                     console.log('✅ Photo uploaded and linked to medicao item');
+
+                    try {
+                      await userActionLogger.logPhotoUpload({
+                        cliente_id: medicao.cliente_id,
+                        area_de_trabalho_id: medicao.area_de_trabalho_id,
+                        ponto_de_coleta_id: medicao.ponto_de_coleta_id,
+                        medicao_id: medicaoData.id,
+                        tipo_medicao_id: photo.tipo_medicao_id,
+                        tipo_medicao_nome: photoItem.tipo_medicao_nome || '',
+                        photo_info: {
+                          file_name: photo.file_name,
+                          file_type: photo.file_type,
+                          file_size: file.size,
+                        },
+                        success: true,
+                        photo_url: uploadResult.photo_url,
+                      });
+                    } catch (logError) {
+                      console.error('Error logging photo upload success:', logError);
+                    }
                   }
                 } else {
                   console.error('❌ Photo upload failed:', uploadResult.error);
+
+                  try {
+                    await userActionLogger.logPhotoUpload({
+                      cliente_id: medicao.cliente_id,
+                      area_de_trabalho_id: medicao.area_de_trabalho_id,
+                      ponto_de_coleta_id: medicao.ponto_de_coleta_id,
+                      medicao_id: medicaoData.id,
+                      tipo_medicao_id: photo.tipo_medicao_id,
+                      tipo_medicao_nome: photoItem.tipo_medicao_nome || '',
+                      photo_info: {
+                        file_name: photo.file_name,
+                        file_type: photo.file_type,
+                        file_size: file.size,
+                      },
+                      success: false,
+                      error: uploadResult.error,
+                    });
+                  } catch (logError) {
+                    console.error('Error logging photo upload failure:', logError);
+                  }
                 }
               }
             } catch (photoError) {
               console.error('❌ Error processing photo:', photoError);
-              // Continue with other photos
             }
           }
         }

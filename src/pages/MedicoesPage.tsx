@@ -8,13 +8,14 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { PhotoService } from '../services/photoService';
-import { 
-  formatDateTime, 
-  formatValueWithUnit, 
-  toLocalDateTimeString, 
+import { userActionLogger } from '../services/userActionLogger';
+import {
+  formatDateTime,
+  formatValueWithUnit,
+  toLocalDateTimeString,
   fromLocalDateTimeString,
   normalizeNumberInput,
-  formatNumberForDisplay 
+  formatNumberForDisplay
 } from '../utils/formatters';
 import { 
   Loader2, 
@@ -659,7 +660,19 @@ export const MedicoesPage: React.FC = () => {
 
   const onSubmit = async (data: MedicaoFormData) => {
     setSaving(true);
-    
+
+    try {
+      await userActionLogger.logMedicaoAttempt({
+        cliente_id: clienteId,
+        area_de_trabalho_id: areaId,
+        ponto_de_coleta_id: pontoId,
+        formData: data,
+        tipos: tipos,
+      });
+    } catch (logError) {
+      console.error('Error logging medicao attempt:', logError);
+    }
+
     try {
       // Converter data_hora_medicao de GMT-3 para UTC para o backend
       const convertToUTC = (localDateTimeString: string): string => {
@@ -684,8 +697,14 @@ export const MedicoesPage: React.FC = () => {
         if (valor !== undefined && valor !== '') {
           const tipo = tipos.find(t => t.id === tipoId);
           let processedValue = valor;
-          let numericValue = 0; // Default numeric value for non-numeric types
+          let numericValue = 0;
           let storedParametro = tipo?.nome;
+
+          const isCriticalType =
+            tipo?.nome &&
+            (tipo.nome.toUpperCase().includes('PH') ||
+              tipo.nome.toUpperCase().includes('CLORO') ||
+              tipo.nome.toUpperCase().includes('FOTO'));
           
           // Convert boolean strings to actual booleans, then to numbers for storage
           if (tipo?.input_type === 'boolean' || tipo?.tipo === 'boolean') {
@@ -703,11 +722,36 @@ export const MedicoesPage: React.FC = () => {
             numericValue = 0;
             storedParametro = `${tipo?.nome}: ${String(processedValue)}`;
           } else {
-            // Fallback for other input types
             const convertedValue = Number(processedValue);
             numericValue = isNaN(convertedValue) ? 0 : convertedValue;
           }
-          
+
+          if (isCriticalType && tipo) {
+            try {
+              await userActionLogger.logCriticalMedicaoType({
+                cliente_id: clienteId,
+                area_de_trabalho_id: areaId,
+                ponto_de_coleta_id: pontoId,
+                tipo_medicao_id: tipoId,
+                tipo_medicao_nome: tipo.nome || '',
+                tipo_metadata: {
+                  input_type: tipo.input_type,
+                  tipo: tipo.tipo,
+                  range: tipo.range,
+                  decimal_places: tipo.decimal_places,
+                  unit: tipo.unit,
+                  options: tipo.options,
+                  validation_rules: tipo.validation_rules,
+                },
+                raw_value: valor,
+                processed_value: processedValue,
+                final_value: numericValue,
+              });
+            } catch (logError) {
+              console.error('Error logging critical medicao type:', logError);
+            }
+          }
+
           medicaoItems.push({
             parametro: storedParametro,
             valor: numericValue,
@@ -721,14 +765,39 @@ export const MedicoesPage: React.FC = () => {
       for (const [tipoId, photos] of Object.entries(data.photos)) {
         if (photos && photos.length > 0) {
           const tipo = tipos.find(t => t.id === tipoId);
-          // For each photo, create a measurement item
+
+          if (tipo) {
+            try {
+              await userActionLogger.logCriticalMedicaoType({
+                cliente_id: clienteId,
+                area_de_trabalho_id: areaId,
+                ponto_de_coleta_id: pontoId,
+                tipo_medicao_id: tipoId,
+                tipo_medicao_nome: tipo.nome || '',
+                tipo_metadata: {
+                  input_type: tipo.input_type,
+                  tipo: tipo.tipo,
+                },
+                raw_value: `${photos.length} photo(s)`,
+                processed_value: photos.map((p) => ({
+                  name: p.name,
+                  type: p.type,
+                  size: p.size,
+                })),
+                final_value: photos.length,
+              });
+            } catch (logError) {
+              console.error('Error logging photo medicao type:', logError);
+            }
+          }
+
           photos.forEach((photo, index) => {
             medicaoItems.push({
               parametro: tipo?.nome,
-              valor: 1, // We use 1 to indicate a photo was taken
+              valor: 1,
               tipo_medicao_id: tipoId,
               tipo_medicao_nome: tipo?.nome,
-              image: `pending_upload_${tipoId}_${index}`, // Temporary identifier
+              image: `pending_upload_${tipoId}_${index}`,
             });
           });
         }
@@ -760,9 +829,18 @@ export const MedicoesPage: React.FC = () => {
         photos: photosForStorage,
       });
 
-      // Note: Photo uploads are now handled by the sync process
+      try {
+        await userActionLogger.logMedicaoSuccess({
+          cliente_id: clienteId,
+          area_de_trabalho_id: areaId,
+          ponto_de_coleta_id: pontoId,
+          items_count: medicaoItems.length,
+          photos_count: photosForStorage.length,
+        });
+      } catch (logError) {
+        console.error('Error logging medicao success:', logError);
+      }
 
-      // Show success toast
       showSuccess(
         '✅ Medição salva com sucesso!',
         isOnline ? 'Dados sincronizados automaticamente' : 'Dados serão sincronizados quando voltar online',
@@ -791,6 +869,21 @@ export const MedicoesPage: React.FC = () => {
       }, 2500);
     } catch (error) {
       console.error('Error saving medicao:', error);
+
+      try {
+        await userActionLogger.logMedicaoError({
+          cliente_id: clienteId,
+          area_de_trabalho_id: areaId,
+          ponto_de_coleta_id: pontoId,
+          error: error,
+          context: {
+            formData: data,
+            tipos: tipos.map((t) => ({ id: t.id, nome: t.nome })),
+          },
+        });
+      } catch (logError) {
+        console.error('Error logging medicao error:', logError);
+      }
     } finally {
       setSaving(false);
     }

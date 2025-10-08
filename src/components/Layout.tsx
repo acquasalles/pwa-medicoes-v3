@@ -1,7 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useOfflineSync } from '../hooks/useOfflineSync';
-import { Wifi, WifiOff, RefreshCw, AlertCircle, X, LogOut } from 'lucide-react';
+import { Wifi, WifiOff, RefreshCw, AlertCircle, X, LogOut, Settings } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,18 +11,19 @@ interface LayoutProps {
   onBack?: () => void;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ 
-  children, 
-  title, 
-  showBackButton = false, 
-  onBack 
+export const Layout: React.FC<LayoutProps> = ({
+  children,
+  title,
+  showBackButton = false,
+  onBack
 }) => {
-  const { signOut } = useAuth();
-  const { 
-    hasPendingData, 
-    syncing, 
-    isOnline, 
-    syncPendingData, 
+  const navigate = useNavigate();
+  const { signOut, isAdmin } = useAuth();
+  const {
+    hasPendingData,
+    syncing,
+    isOnline,
+    syncPendingData,
     pendingMedicoes,
     lastSyncError,
     clearSyncError
@@ -92,6 +94,18 @@ export const Layout: React.FC<LayoutProps> = ({
                     </button>
                   )}
                 </div>
+              )}
+
+              {/* Admin Button */}
+              {isAdmin() && (
+                <button
+                  onClick={() => navigate('/admin/user-action-logs')}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-600 hover:text-primary hover:bg-accent/20 transition-colors"
+                  title="Logs de Ações"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span className="text-sm font-medium">Admin</span>
+                </button>
               )}
 
               {/* Logout Button */}

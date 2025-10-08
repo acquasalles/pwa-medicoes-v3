@@ -5,6 +5,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import { LoginPage } from './pages/LoginPage';
 import { SelectionPage } from './pages/SelectionPage';
 import { MedicoesPage } from './pages/MedicoesPage';
+import { UserActionLogsPage } from './pages/UserActionLogsPage';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { InstallPrompt } from './components/InstallPrompt';
@@ -55,6 +56,10 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/medicoes"
           element={<MedicoesPage />}
+        />
+        <Route
+          path="/admin/user-action-logs"
+          element={<UserActionLogsPage />}
         />
         <Route path="/" element={<Navigate to="/selecao" replace />} />
       </Routes>
