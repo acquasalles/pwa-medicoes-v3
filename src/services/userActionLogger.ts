@@ -60,9 +60,15 @@ class UserActionLogger {
   private localQueue: LogData[] = [];
 
   private constructor() {
+    console.log('🚀 [UserActionLogger] Initializing...');
     this.checkConfig();
     this.startConfigPolling();
     this.getUserIP();
+
+    // Reset circuit breaker on initialization
+    this.isCircuitBreakerOpen = false;
+    this.failureCount = 0;
+    console.log('✅ [UserActionLogger] Initialized successfully');
   }
 
   public static getInstance(): UserActionLogger {
@@ -336,12 +342,22 @@ class UserActionLogger {
       const { error } = await supabase.from('user_action_logs').insert(logEntry);
 
       if (error) {
-        console.error('❌ [UserActionLogger] Insert failed:', error);
+        console.error('❌ [UserActionLogger] Insert failed:', {
+          error,
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
         this.failureCount++;
+        console.warn(`⚠️ [UserActionLogger] Failure count: ${this.failureCount}/${this.maxFailures}`);
+
         if (this.failureCount >= this.maxFailures) {
           this.isCircuitBreakerOpen = true;
-          console.warn('⚠️ [UserActionLogger] Circuit breaker opened due to multiple failures');
+          console.error('🚨 [UserActionLogger] Circuit breaker OPENED! No more logs will be sent for 60 seconds');
+          console.error('🚨 Last error that triggered circuit breaker:', error);
           setTimeout(() => {
+            console.log('🔄 [UserActionLogger] Circuit breaker CLOSED. Attempting to process queued logs...');
             this.isCircuitBreakerOpen = false;
             this.failureCount = 0;
             this.processLocalQueue();
@@ -590,6 +606,27 @@ class UserActionLogger {
   public async refreshConfig(): Promise<void> {
     localStorage.removeItem('user_action_logging_config');
     await this.checkConfig();
+  }
+
+  public resetCircuitBreaker(): void {
+    console.log('🔄 [UserActionLogger] Manually resetting circuit breaker');
+    this.isCircuitBreakerOpen = false;
+    this.failureCount = 0;
+    console.log('✅ [UserActionLogger] Circuit breaker reset complete');
+  }
+
+  public getStatus(): {
+    isEnabled: boolean;
+    isCircuitBreakerOpen: boolean;
+    failureCount: number;
+    queuedLogs: number;
+  } {
+    return {
+      isEnabled: this.isEnabled,
+      isCircuitBreakerOpen: this.isCircuitBreakerOpen,
+      failureCount: this.failureCount,
+      queuedLogs: this.localQueue.length,
+    };
   }
 }
 
