@@ -129,5 +129,3 @@ A aplicação pode ser instalada como um app nativo:
 - **Desktop**: Ícone de instalação na barra de endereços
 
 ---
-
-**Desenvolvido seguindo as melhores práticas de PWA e UX/UI** ✨
