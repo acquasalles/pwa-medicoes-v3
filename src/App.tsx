@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -8,7 +8,10 @@ import { MedicoesPage } from './pages/MedicoesPage';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { InstallPrompt } from './components/InstallPrompt';
+import { ForceUpdateModal } from './components/ForceUpdateModal';
 import { useAuth } from './contexts/AuthContext';
+import { useVersionCheck } from './hooks/useVersionCheck';
+import { saveInstalledVersion } from './lib/version';
 
 // Protected Routes Component
 const ProtectedRoutes: React.FC = () => {
@@ -32,10 +35,18 @@ const ProtectedRoutes: React.FC = () => {
   return <AppRoutes />;
 };
 
-// App Routes Component
 const AppRoutes: React.FC = () => {
+  const versionCheck = useVersionCheck();
+
   return (
     <>
+      {versionCheck.forceUpdate && versionCheck.latestVersion && (
+        <ForceUpdateModal
+          version={versionCheck.latestVersion.version}
+          releaseNotes={versionCheck.latestVersion.description}
+        />
+      )}
+
       <Routes>
         <Route
           path="/selecao"
@@ -47,20 +58,28 @@ const AppRoutes: React.FC = () => {
         />
         <Route path="/" element={<Navigate to="/selecao" replace />} />
       </Routes>
-      
-      {/* PWA Components */}
-      <UpdatePrompt />
+
+      {!versionCheck.forceUpdate && versionCheck.updateAvailable && (
+        <UpdatePrompt
+          version={versionCheck.latestVersion?.version}
+          releaseNotes={versionCheck.latestVersion?.description}
+          forceUpdate={false}
+        />
+      )}
       <OfflineIndicator />
     </>
   );
 };
 
 function App() {
+  useEffect(() => {
+    saveInstalledVersion();
+  }, []);
+
   return (
     <>
-      {/* PWA Install Prompt - Available before authentication */}
       <InstallPrompt />
-      
+
       <AuthProvider>
         <ToastProvider>
           <Router>
