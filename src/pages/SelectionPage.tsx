@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
 import { supabase, Cliente, AreaDeTrabalho, PontoDeColeta } from '../lib/supabase';
 import { useOfflineSync } from '../hooks/useOfflineSync';
+import { useVersionCheck } from '../hooks/useVersionCheck';
 import { Loader2, ChevronDown, Building2, MapPin, Target, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { VersionDisplay } from '../components/VersionDisplay';
 
 export const SelectionPage: React.FC = () => {
   const navigate = useNavigate();
   const { isOnline } = useOfflineSync();
+  const versionCheck = useVersionCheck();
   
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [areas, setAreas] = useState<AreaDeTrabalho[]>([]);
@@ -657,6 +660,13 @@ export const SelectionPage: React.FC = () => {
             )}
           </div>
         </div>
+
+        <VersionDisplay
+          currentVersion={versionCheck.currentVersion}
+          updateAvailable={versionCheck.updateAvailable && !versionCheck.forceUpdate}
+          latestVersion={versionCheck.latestVersion?.version}
+          onVersionClick={() => versionCheck.recheckNow()}
+        />
       </div>
     </Layout>
   );

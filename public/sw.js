@@ -1,11 +1,12 @@
-const CACHE_NAME = 'medicoes-pwa-v2';
+const APP_VERSION = '1.0.0';
+const CACHE_NAME = `medicoes-pwa-v${APP_VERSION}`;
 const urlsToCache = [
   '/',
   '/svg-icon-any.svg'
 ];
 
 self.addEventListener('install', (event) => {
-  console.log('🔧 Service Worker: Installing...');
+  console.log(`🔧 Service Worker v${APP_VERSION}: Installing...`);
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -90,7 +91,7 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('🚀 Service Worker: Activating...');
+  console.log(`🚀 Service Worker v${APP_VERSION}: Activating...`);
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -103,8 +104,8 @@ self.addEventListener('activate', (event) => {
       );
     })
     .then(() => {
-      console.log('✅ Service Worker: Activated and ready');
-      return self.clients.claim(); // Take control of all clients
+      console.log(`✅ Service Worker v${APP_VERSION}: Activated and ready`);
+      return self.clients.claim();
     })
   );
 });
