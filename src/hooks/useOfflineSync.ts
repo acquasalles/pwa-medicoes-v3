@@ -153,10 +153,27 @@ export const useOfflineSync = () => {
         
         console.log('✅ Medicao inserted:', medicaoData.id);
 
+        // Debug: Verificar dados salvos no banco
+        if (process.env.NODE_ENV === 'development') {
+          // Import dynamic to avoid bundling in production
+          import('../utils/debugHelpers').then(({ verifyDatabaseData }) => {
+            setTimeout(() => {
+              verifyDatabaseData(medicaoData.id);
+            }, 1000);
+          });
+        }
+
         // Separate photo items from regular items
         const regularItems = medicao.items.filter(item => !item.image?.startsWith('pending_upload_'));
         const photoItems = medicao.items.filter(item => item.image?.startsWith('pending_upload_'));
 
+        console.log('🔍 Items breakdown:', {
+          totalItems: medicao.items.length,
+          regularItems: regularItems.length,
+          photoItems: photoItems.length,
+          regularItemsData: regularItems,
+          photoItemsData: photoItems
+        });
         // Insert regular medicao items
         console.log('📝 Inserting medicao items...');
         const regularItemsToInsert = regularItems.map(item => ({
@@ -164,14 +181,28 @@ export const useOfflineSync = () => {
           medicao_id: medicaoData.id,
         }));
 
+        console.log('📋 Regular items to insert:', {
+          count: regularItemsToInsert.length,
+          data: regularItemsToInsert,
+          medicao_id: medicaoData.id
+        });
         if (regularItemsToInsert.length > 0) {
+          console.log('🚀 Starting regular items insertion...');
           const { error: regularItemsError } = await supabase
             .from('medicao_items')
             .insert(regularItemsToInsert);
 
           if (regularItemsError) {
+
+            console.error('❌ Regular medicao items insert error:', {
+              message: regularItemsError.message,
+              code: regularItemsError.code,
+              details: regularItemsError.details,
+              hint: regularItemsError.hint,
+              fullError: regularItemsError
+            });
+            setLastSyncError(`Erro ao inserir itens da medição: ${regularItemsError.message} (Código: ${regularItemsError.code})`);
             console.error('❌ Regular medicao items insert error:', regularItemsError);
-            setLastSyncError(`Erro ao inserir itens da medição: ${regularItemsError.message}`);
 
             for (const item of regularItemsToInsert) {
               try {
@@ -188,11 +219,14 @@ export const useOfflineSync = () => {
                 console.error('Error logging item insert failure:', logError);
               }
             }
-
             throw regularItemsError;
           }
 
           console.log('✅ Regular medicao items inserted:', regularItemsToInsert.length, 'items');
+
+        } else {
+          console.log('ℹ️ No regular items to insert');
+
 
           for (const item of regularItemsToInsert) {
             try {
@@ -213,9 +247,19 @@ export const useOfflineSync = () => {
         // Handle photo uploads and create photo medicao items
         if (medicao.photos && medicao.photos.length > 0) {
           console.log('📸 Processing photo uploads...');
+          console.log('📋 Photos to process:', {
+            count: medicao.photos.length,
+            photos: medicao.photos.map(p => ({
+              tipo_medicao_id: p.tipo_medicao_id,
+              file_name: p.file_name,
+              file_type: p.file_type
+            }))
+          });
           
           for (const photo of medicao.photos) {
             try {
+              console.log(`📸 Processing photo for tipo_medicao_id: ${photo.tipo_medicao_id}`);
+              
               // Convert base64 back to File
               const byteString = atob(photo.file_data.split(',')[1]);
               const arrayBuffer = new ArrayBuffer(byteString.length);
@@ -230,19 +274,37 @@ export const useOfflineSync = () => {
                 item.image?.includes(photo.tipo_medicao_id)
               );
               
+              console.log('🔍 Photo item found:', {
+                photoItem,
+                searchCriteria: photo.tipo_medicao_id,
+                availablePhotoItems: photoItems
+              });
+              
               if (photoItem) {
+                const photoItemToInsert = {
+                  ...photoItem,
+                  medicao_id: medicaoData.id,
+                  image: null, // Will be updated after upload
+                };
+                
+                console.log('📋 Photo item to insert:', photoItemToInsert);
+                console.log('🚀 Starting photo item insertion...');
+                
                 const { data: photoItemData, error: photoItemError } = await supabase
                   .from('medicao_items')
-                  .insert({
-                    ...photoItem,
-                    medicao_id: medicaoData.id,
-                    image: null, // Will be updated after upload
-                  })
+                  .insert(photoItemToInsert)
                   .select()
                   .single();
 
                 if (photoItemError) {
-                  console.error('❌ Photo medicao item insert error:', photoItemError);
+                  console.error('❌ Photo medicao item insert error:', {
+                    message: photoItemError.message,
+                    code: photoItemError.code,
+                    details: photoItemError.details,
+                    hint: photoItemError.hint,
+                    fullError: photoItemError,
+                    attemptedInsert: photoItemToInsert
+                  });
                   continue; // Skip this photo but continue with others
                 }
 
@@ -329,11 +391,23 @@ export const useOfflineSync = () => {
                     console.error('Error logging photo upload failure:', logError);
                   }
                 }
+              } else {
+                console.error('❌ No photoItem found for tipo_medicao_id:', photo.tipo_medicao_id);
               }
             } catch (photoError) {
-              console.error('❌ Error processing photo:', photoError);
+              console.error('❌ Error processing photo:', {
+                error: photoError,
+                photo: {
+                  tipo_medicao_id: photo.tipo_medicao_id,
+                  file_name: photo.file_name,
+                  file_type: photo.file_type
+                }
+              });
+
             }
           }
+        } else {
+          console.log('ℹ️ No photos to process');
         }
 
         successfulSyncs.push(medicao.id);
