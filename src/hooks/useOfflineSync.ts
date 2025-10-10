@@ -74,7 +74,7 @@ export const useOfflineSync = () => {
     }
   };
 
-  const addPendingMedicao = (medicao: Omit<PendingMedicao, 'id' | 'timestamp'>) => {
+  const addPendingMedicao = async (medicao: Omit<PendingMedicao, 'id' | 'timestamp'>) => {
     const newMedicao: PendingMedicao = {
       ...medicao,
       id: crypto.randomUUID(),
@@ -86,7 +86,7 @@ export const useOfflineSync = () => {
     savePendingData(updated);
 
     if (isOnline) {
-      syncPendingData(updated);
+      await syncPendingData(updated);
     }
 
     return newMedicao.id;
