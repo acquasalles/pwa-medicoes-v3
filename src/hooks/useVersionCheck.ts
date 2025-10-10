@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { APP_VERSION, updateLastVersionCheck, shouldCheckForUpdate, hasUpdateBeenDismissed } from '../lib/version';
+import { APP_VERSION, updateLastVersionCheck, shouldCheckForUpdate, hasUpdateBeenDismissed, getInstalledVersion } from '../lib/version';
 import { isNewerVersion } from '../utils/semver';
 
 export interface AppVersion {
@@ -65,7 +65,12 @@ export const useVersionCheck = () => {
       console.log('📦 Current version:', APP_VERSION);
       console.log('📦 Latest version:', data.version);
 
-      const isNewer = isNewerVersion(APP_VERSION, data.version);
+      const installedVersion = getInstalledVersion();
+      const effectiveCurrentVersion = installedVersion?.version || '0.0.0';
+
+      console.log('📦 Installed version from storage:', effectiveCurrentVersion);
+
+      const isNewer = isNewerVersion(effectiveCurrentVersion, data.version);
       const wasDismissed = hasUpdateBeenDismissed(data.version);
 
       const updateAvailable = isNewer && (!wasDismissed || data.force_update);

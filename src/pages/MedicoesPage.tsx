@@ -820,7 +820,7 @@ export const MedicoesPage: React.FC = () => {
       }
 
       // Add to pending (handles both online and offline scenarios)
-      addPendingMedicao({
+      await addPendingMedicao({
         ponto_de_coleta_id: pontoId,
         data_hora_medicao: utcDateTime,
         cliente_id: clienteId,
