@@ -1,4 +1,4 @@
-export const APP_VERSION = '1.1.20';
+export const APP_VERSION = '1.2.1';
 
 const VERSION_STORAGE_KEY = 'app_installed_version';
 const VERSION_INSTALL_DATE_KEY = 'app_version_install_date';
