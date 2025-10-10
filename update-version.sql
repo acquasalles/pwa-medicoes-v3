@@ -1,7 +1,17 @@
-INSERT INTO app_versions (version, minimum_version, force_update, release_notes)
-VALUES ('1.2.1', '1.2.1', true, 'Atualização obrigatória - Versão 1.2.1')
+-- Desativar versão anterior
+UPDATE app_version SET is_active = false WHERE is_active = true;
+
+-- Inserir nova versão 1.2.1 como ativa e obrigatória
+INSERT INTO app_version (version, release_date, force_update, description, is_active)
+VALUES (
+  '1.2.1',
+  now(),
+  true,
+  'Atualização obrigatória - Versão 1.2.1',
+  true
+)
 ON CONFLICT (version) DO UPDATE
-SET minimum_version = EXCLUDED.minimum_version,
-    force_update = EXCLUDED.force_update,
-    release_notes = EXCLUDED.release_notes,
-    updated_at = now();
+SET force_update = EXCLUDED.force_update,
+    description = EXCLUDED.description,
+    is_active = EXCLUDED.is_active,
+    release_date = now();
