@@ -86,14 +86,16 @@ export const useOfflineSync = () => {
     savePendingData(updated);
 
     if (isOnline) {
-      syncPendingData();
+      syncPendingData(updated);
     }
 
     return newMedicao.id;
   };
 
-  const syncPendingData = async () => {
-    if (syncing || pendingMedicoes.length === 0) return;
+  const syncPendingData = async (medicoesToSync?: PendingMedicao[]) => {
+    const medicoes = medicoesToSync || pendingMedicoes;
+
+    if (syncing || medicoes.length === 0) return;
 
     setSyncing(true);
     setLastSyncError(null);
@@ -103,14 +105,14 @@ export const useOfflineSync = () => {
 
     try {
       await userActionLogger.logSyncAttempt({
-        medicoes_count: pendingMedicoes.length,
-        pending_medicoes: pendingMedicoes,
+        medicoes_count: medicoes.length,
+        pending_medicoes: medicoes,
       });
     } catch (logError) {
       console.error('Error logging sync attempt:', logError);
     }
 
-    for (const medicao of pendingMedicoes) {
+    for (const medicao of medicoes) {
       try {
 
 
@@ -426,14 +428,14 @@ export const useOfflineSync = () => {
 
 
     console.log('📈 Sync completed:', {
-      total: pendingMedicoes.length,
+      total: medicoes.length,
       successful: successfulSyncs.length,
-      failed: pendingMedicoes.length - successfulSyncs.length
+      failed: medicoes.length - successfulSyncs.length
     });
 
     // Remove successfully synced items
     if (successfulSyncs.length > 0) {
-      const remaining = pendingMedicoes.filter(m => !successfulSyncs.includes(m.id));
+      const remaining = medicoes.filter(m => !successfulSyncs.includes(m.id));
       savePendingData(remaining);
     }
 
